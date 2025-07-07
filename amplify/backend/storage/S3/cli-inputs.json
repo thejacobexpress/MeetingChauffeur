@@ -1,0 +1,14 @@
+{
+  "resourceName": "S3",
+  "policyUUID": "96ead563",
+  "bucketName": "meetingsummarizerapp3e62d7c6d4654f17bc7d042793a",
+  "storageAccess": "authAndGuest",
+  "guestAccess": [
+    "CREATE_AND_UPDATE"
+  ],
+  "authAccess": [
+    "CREATE_AND_UPDATE"
+  ],
+  "triggerFunction": "generateSummary",
+  "groupAccess": {}
+}
