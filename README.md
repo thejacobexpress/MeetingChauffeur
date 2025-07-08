@@ -1,4 +1,4 @@
-# meeting_summarizer_app
+# MeetingSummarizer-App
 
 ## Data available to send recipients
 - Time and date
