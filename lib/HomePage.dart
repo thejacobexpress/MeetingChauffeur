@@ -88,31 +88,9 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  Future<void> _configureAmplify() async {
-
-    // Add any Amplify plugins you want to use
-    final authPlugin = AmplifyAuthCognito();
-    final api = AmplifyAPI();
-    final storage = AmplifyStorageS3();
-    await Amplify.addPlugin(authPlugin);
-    await Amplify.addPlugin(api);
-    await Amplify.addPlugin(storage);
-
-    // Once Plugins are added, configure Amplify
-    // Note: Amplify can only be configured once.
-    try {
-      await Amplify.configure(amplifyconfig);
-      safePrint('Successfully configured Amplify 🎉');
-    } on AmplifyAlreadyConfiguredException {
-      safePrint("Tried to reconfigure Amplify; this can occur when your app restarts on Android.");
-    }
-  }
-
   @override
   initState() {
     super.initState();
-
-    _configureAmplify();
 
     configureInputs(false);
     setState(() {
