@@ -5,6 +5,7 @@ import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:amplify_storage_s3/amplify_storage_s3.dart';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/widgets.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'main.dart';
@@ -16,18 +17,18 @@ import 'dart:convert';
 import 'package:aws_signature_v4/aws_signature_v4.dart';
 import 'package:dio/dio.dart';
 
-Future<void> uploadJsonToS3() async {
+Future<Map<String, dynamic>> uploadJsonToS3() async {
 
   final Map<String, dynamic> json = {
     'location': false, // not dealt with on server end
     'summary': false,
-    'transcript': false,
+    'transcript': true,
     'action': false,
     'decisions': false,
     'names': false,
     'topics':false,
     'purpose':false,
-    'next_steps':true,
+    'next_steps':false,
     'corrections':false,
     'questions':false
   };
@@ -58,6 +59,8 @@ Future<void> uploadJsonToS3() async {
     } on StorageException catch (e) {
       safePrint('Error uploading file: ${e.message}');
     }
+
+    return json;
 }
 
 Future<String> generatePresignedPutUrl (String fileName) async {
@@ -94,7 +97,7 @@ Future<String> generatePresignedPutUrl (String fileName) async {
 
 void uploadWAVtoS3(String path) async {
 
-  await uploadJsonToS3();
+  final json = await uploadJsonToS3();
 
   // Ask user to select a WAV file
   if(path == "") {
@@ -116,7 +119,7 @@ void uploadWAVtoS3(String path) async {
         ).result;
         safePrint('File uploaded: ${result.uploadedItem}');
 
-        retrieveSummary();
+        // retrieveSummary();
       }
     } on StorageException catch (e) {
       safePrint('Error uploading file: ${e.message}');
@@ -146,7 +149,8 @@ void uploadWAVtoS3(String path) async {
         );
         safePrint("file uploaded!");
 
-        // retrieveSummary();
+        await Future.delayed(Duration(seconds: 3));
+        await retrieveFilesFromS3(json);
 
       } on Exception catch (e, st) {
         safePrint("error: $e");
@@ -155,61 +159,158 @@ void uploadWAVtoS3(String path) async {
     }
 }
 
+Future<String> downloadFileContent(String localDir, String serverDir, String type) async {
+  int retries = 0;
+  while(retries < 10) {
+    try {
+      final result = await Amplify.Storage.downloadFile(
+        path: StoragePath.fromString(serverDir),
+        localFile: AWSFile.fromPath(localDir + localAudioFileName.replaceAll('.WAV', '.txt')),
+      ).result;
+      safePrint('File downloaded: ${result.downloadedItem}');
 
+      // Delete the summary file in the s3 after retrieving it
+      final deleteResult = await Amplify.Storage.remove(
+        path: StoragePath.fromString('public/summaries/${localAudioFileName.replaceAll('.WAV', '.txt')}'),
+        options: StorageRemoveOptions(bucket: StorageBucket.fromBucketInfo(BucketInfo(bucketName: 'meetingsummarizerapp3e62d7c6d4654f17bc7d042793aca958-dev', region: 'us-west-2'))),
+      ).result;
 
-void retrieveSummary() async {
-  await Future.delayed(Duration(seconds: 3));
-  try{
-    final dir = await getApplicationDocumentsDirectory();
-    final localPath = localFilePath + "/" + localAudioFileName.replaceAll('.WAV', '.txt');
-    final result = await Amplify.Storage.downloadFile(
-      path: StoragePath.fromString('public/summaries/${localAudioFileName.replaceAll('.WAV', '.txt')}'),
-      localFile: AWSFile.fromPath(localPath),
-    ).result;
-    safePrint('File downloaded: ${result.downloadedItem}');
-    File(localPath).readAsString().then((content) {
-      safePrint('Summary content: $content');
-    });
+      File(localDir + localAudioFileName.replaceAll('.WAV', '.txt')).readAsString().then((content) {
+        safePrint('$type: $content');
+        return content;
+      });
 
-    // Delete the summary file in the s3 after retrieving it
-    final deleteResult = await Amplify.Storage.remove(
-      path: StoragePath.fromString('public/summaries/${localAudioFileName.replaceAll('.WAV', '.txt')}'),
-      options: StorageRemoveOptions(bucket: StorageBucket.fromBucketInfo(BucketInfo(bucketName: 'meetingsummarizerapp3e62d7c6d4654f17bc7d042793aca958-dev', region: 'us-west-2'))),
-    ).result;
+      break;
 
-  } on StorageAccessDeniedException catch (e) {
-    safePrint('Access denied: ${e.message}');
-    await Future.delayed(Duration(seconds: 1)); // Retry after a second
-    retrieveSummary();
+    } on Exception catch(e) {
+      safePrint("File not ready yet.");
+      await Future.delayed(Duration(seconds: 1));
+      retries++;
+    }
   }
+  return "";
 }
 
-void retrieveTranscript() async {
-  await Future.delayed(Duration(seconds: 3));
-  try{
-    final localPath = localFilePath + "/" + localAudioFileName.replaceAll('.WAV', '.txt');
-    final result = await Amplify.Storage.downloadFile(
-      path: StoragePath.fromString('public/transcriptions/${localAudioFileName.replaceAll('.WAV', '.txt')}'),
-      localFile: AWSFile.fromPath(localPath),
-    ).result;
-    safePrint('File downloaded: ${result.downloadedItem}');
-    File(localPath).readAsString().then((content) {
-      safePrint('Transcript content: $content');
-    });
+Future<Map<String, String>> retrieveFilesFromS3(Map<String, dynamic> json) async {
+  final appDocDir = await getApplicationDocumentsDirectory();
+  var localDir;
+  var serverDir;
+  var type;
+  var canAddEntry = false;
 
-    // Delete the transcription file in the s3 after retrieving it
-    final deleteResult = await Amplify.Storage.remove(
-      path: StoragePath.fromString('public/transcriptions/${localAudioFileName.replaceAll('.WAV', '.txt')}'),
-      options: StorageRemoveOptions(bucket: StorageBucket.fromBucketInfo(BucketInfo(bucketName: 'meetingsummarizerapp3e62d7c6d4654f17bc7d042793aca958-dev', region: 'us-west-2'))),
-    ).result;
+  final Map<String, String> genList = {};
 
-  } on StorageAccessDeniedException catch (e) {
-    safePrint('Access denied: ${e.message}');
-    await Future.delayed(Duration(seconds: 1)); // Retry after a second
-    retrieveTranscript();
+  for(final entry in json.entries) {
+    canAddEntry = false;
+    switch(entry.key) {
+      case ("summary"):
+        if (entry.value) {
+          localDir = Directory('${appDocDir.path}/summaries/');
+          serverDir = 'public/summaries/${localAudioFileName.replaceAll('.WAV', '.txt')}';
+          type = "summary";
+          if(localDir.existsSync()) {} else {
+            localDir.create();
+          }
+          canAddEntry = true;
+        }
+      case ("transcript"):
+        if (entry.value) {
+          localDir = Directory('${appDocDir.path}/transcriptions/');
+          serverDir = 'public/transcriptions/${localAudioFileName.replaceAll('.WAV', '.txt')}';
+          type = "transcript";
+          if(localDir.existsSync()) {} else {
+            localDir.create();
+          }
+          canAddEntry = true;
+        }
+      case ("action"):
+        if (entry.value) {
+          localDir = Directory('${appDocDir.path}/action/');
+          serverDir = 'public/action/${localAudioFileName.replaceAll('.WAV', '.txt')}';
+          type = "action";
+          if(localDir.existsSync()) {} else {
+            localDir.create();
+          }
+          canAddEntry = true;
+        }
+      case ("decisions"):
+        if (entry.value) {
+          localDir = Directory('${appDocDir.path}/decisions/');
+          serverDir = 'public/decisions/${localAudioFileName.replaceAll('.WAV', '.txt')}';
+          type = "decisions";
+          if(localDir.existsSync()) {} else {
+            localDir.create();
+          }
+          canAddEntry = true;
+        }
+      case ("names"):
+        if (entry.value) {
+          localDir = Directory('${appDocDir.path}/names/');
+          serverDir = 'public/names/${localAudioFileName.replaceAll('.WAV', '.txt')}';
+          type = "names";
+          if(localDir.existsSync()) {} else {
+            localDir.create();
+          }
+          canAddEntry = true;
+        }
+      case ("topics"):
+        if (entry.value) {
+          localDir = Directory('${appDocDir.path}/topics/');
+          serverDir = 'public/topics/${localAudioFileName.replaceAll('.WAV', '.txt')}';
+          type = "topics";
+          if(localDir.existsSync()) {} else {
+            localDir.create();
+          }
+          canAddEntry = true;
+        }
+      case ("purpose"):
+        if (entry.value) {
+          localDir = Directory('${appDocDir.path}/purpose/');
+          serverDir = 'public/purpose/${localAudioFileName.replaceAll('.WAV', '.txt')}';
+          type = "purpose";
+          if(localDir.existsSync()) {} else {
+            localDir.create();
+          }
+          canAddEntry = true;
+        }
+      case ("next_steps"):
+        if (entry.value) {
+          localDir = Directory('${appDocDir.path}/next_steps/');
+          serverDir = 'public/next_steps/${localAudioFileName.replaceAll('.WAV', '.txt')}';
+          type = "next_steps";
+          if(localDir.existsSync()) {} else {
+            localDir.create();
+          }
+          canAddEntry = true;
+        }
+      case ("corrections"):
+        if (entry.value) {
+          localDir = Directory('${appDocDir.path}/corrections/');
+          serverDir = 'public/corrections/${localAudioFileName.replaceAll('.WAV', '.txt')}';
+          type = "corrections";
+          if(localDir.existsSync()) {} else {
+            localDir.create();
+          }
+          canAddEntry = true;
+        }
+      case ("questions"):
+        if (entry.value) {
+          localDir = Directory('${appDocDir.path}/questions/');
+          serverDir = 'public/questions/${localAudioFileName.replaceAll('.WAV', '.txt')}';
+          type = "questions";
+          if(localDir.existsSync()) {} else {
+            localDir.create();
+          }
+          canAddEntry = true;
+        }
+      }
+    
+    if(canAddEntry) {
+      genList['$type'] = await downloadFileContent(localDir.path, serverDir, type);
+    }
+
   }
-}
 
-void sendEmail(String email) async {
-  
+  return genList;
+
 }
