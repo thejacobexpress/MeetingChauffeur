@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
@@ -9,22 +10,24 @@ import 'package:record/record.dart';
 
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
 
-// Amplify Flutter Packages
 import 'package:amplify_flutter/amplify_flutter.dart';
-import 'package:amplify_api/amplify_api.dart';
-import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
-import 'package:amplify_storage_s3/amplify_storage_s3.dart';
-import 'amplifyconfiguration.dart';
-
-import 'package:flutter_audio_output/flutter_audio_output.dart';
 
 import 'BackendCalls.dart';
 import 'main.dart';
+import 'AddRecipientsPage.dart';
 
 var localAudioFileName;
+var filePath = "";
+List<String> recordingFilePaths = List.empty(growable: true); // Assumes that the last WAV is the current WAV
+
+void updatePageFunc() {
+
+}
 
 class MyHomePage extends StatefulWidget {
+
   const MyHomePage({super.key});
+
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
@@ -110,9 +113,14 @@ class _MyHomePageState extends State<MyHomePage> {
           encoder: AudioEncoder.pcm16bits,
           device: availableInputs[currentInputIndex],
         );
-        final dir = await getApplicationDocumentsDirectory();
-        localFilePath = dir.path + "";
-        tempWavPath = "$localFilePath/recording.WAV";
+        final appDocDir = await getApplicationDocumentsDirectory();
+        final dir = Directory('${appDocDir.path}/recordings');
+        if(dir.existsSync()) {
+        }else {
+          dir.create();
+        }
+        tempWavPath = '${dir.path}/recording${recordingFilePaths.length.toString()}.WAV';
+        recordingFilePaths.add(tempWavPath);
         await record.start(recordConfig, path: tempWavPath);
         safePrint("Recording temporarily saved in app files");
       } else {
@@ -121,16 +129,39 @@ class _MyHomePageState extends State<MyHomePage> {
     });
 
   }
+  
+  void goToAddRecipientsPage() {
+    setState(() {
+      Navigator.of(context).push(MaterialPageRoute(builder: (context) => AddRecipientsPage()));
+    });
+  }
 
   void stopRecording() async {
     safePrint("Stop Recording");
     record.stop();
-    // Save the wav file more permanently inside of file of the users choosing
-    final params = SaveFileDialogParams(sourceFilePath: tempWavPath);
-    await FlutterFileDialog.saveFile(params: params);
-    // File(tempWavPath).deleteSync(); // Delete the temporary file
-    safePrint("Recording saved to user selected location");
-    uploadWAVtoS3();
+
+    showDialog(context: context, builder: (BuildContext context) {
+      return AlertDialog(
+        content: Text("Do you want to send out parts of this meeting?"),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text("No"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              goToAddRecipientsPage();
+            },
+            child: Text("Yes"),
+          ),
+        ],
+      );
+    });
+
+    // uploadWAVtoS3();
   }
 
   void recordPressed() {

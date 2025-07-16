@@ -31,12 +31,16 @@ dependencies:
   flutter:
     sdk: flutter
 
-  amplify_flutter: ^2.0.0
+  amplify_flutter: ^2.6.4
   amplify_auth_cognito: ^2.0.0
   amplify_api: ^2.0.0
   amplify_storage_s3: ^2.6.4
 
   cupertino_icons: ^1.0.8
+
+  aws_signature_v4: ^0.6.7
+  http: ^1.4.0
+  dio: ^5.8.0+1
 
   record: ^6.0.0
   flutter_audio_output: ^0.0.4

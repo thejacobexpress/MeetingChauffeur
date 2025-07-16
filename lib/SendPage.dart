@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'backendCalls.dart';
+
 class SendPage extends StatefulWidget {
   const SendPage({super.key});
 
@@ -17,8 +19,55 @@ class SendPage extends StatefulWidget {
 }
 
 class _SendPageState extends State<SendPage> {
+
+  final controller = TextEditingController();
+
   @override
   Widget build(BuildContext context) {
-    return Center();
+    return Center(child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Padding(padding: EdgeInsets.all(50), child: 
+          TextField(
+            decoration: InputDecoration(
+              labelText: 'Name',
+              border: OutlineInputBorder(),
+            ),
+            controller: controller,
+          ),
+        ),
+        Padding(padding: EdgeInsets.all(20), child:
+          Text(
+            'Contact',
+            style: TextStyle(fontSize: 20),
+          ),
+        ),
+        Padding(padding: EdgeInsets.all(20), child:
+          TextField(
+            decoration: InputDecoration(
+              labelText: 'Email',
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ),
+        // Expanded(flex: 0, child: 
+          Padding(padding: EdgeInsets.all(70), child:
+            ElevatedButton(
+              onPressed: () => sendEmail(controller.text),
+              style: ButtonStyle(
+              backgroundColor: MaterialStateProperty.all<Color>(Colors.blue),
+              padding: MaterialStateProperty.all<EdgeInsets>(EdgeInsets.all(20)),
+              textStyle: MaterialStateProperty.all<TextStyle>(TextStyle(fontSize: 20)),
+              shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30.0),
+                ),
+              )),
+              child: Center(child: Text("Send Meeting", style: TextStyle(color: Colors.white, fontSize: 20)))
+            )
+          )
+        // )
+      ],
+    ));
   }
 }

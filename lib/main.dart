@@ -1,5 +1,6 @@
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
+import 'package:meeting_summarizer_app/AddRecipientsPage.dart';
 
 import 'HomePage.dart';
 import 'SendPage.dart';
@@ -14,6 +15,8 @@ String localFilePath = "";
 
 int pageIndex = 0;
 
+final pageController = PageController();
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -23,7 +26,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Meeting Summarizer',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple, surface: Colors.white),
       ),
       home: Scaffold(body: Center(child:MyPage())),
     );
@@ -67,7 +70,8 @@ class _MyPageState extends State<MyPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(bottomNavigationBar: NavigationBar(destinations: 
+    return Scaffold(
+      bottomNavigationBar: NavigationBar(destinations: 
       [
         NavigationDestination(
           icon: Icon(Icons.home),
@@ -85,11 +89,30 @@ class _MyPageState extends State<MyPage> {
       onDestinationSelected: (int index) {
         setState(() {
           pageIndex = index;
+          pageController.jumpToPage(index);
         });
         safePrint("Selected destination: $index");
       },
+      selectedIndex: pageIndex,
     ),
-    body: <Widget>[MyHomePage(), MeetingsPage(), SendPage()][pageIndex]);
+    body: PageView(
+      controller: pageController, 
+      onPageChanged: (index) {setState(() { pageIndex = index; });},
+      physics: NeverScrollableScrollPhysics(),
+      children:
+        <Widget>[
+          Navigator(
+            onGenerateRoute: (settings) {return MaterialPageRoute(builder: (context) => MyHomePage());},
+          ),
+          Navigator(
+            onGenerateRoute: (settings) {return MaterialPageRoute(builder: (context) => MeetingsPage());},
+          ),
+          Navigator(
+            onGenerateRoute: (settings) {return MaterialPageRoute(builder: (context) => SendPage());},
+          )
+        ],
+      )
+    );
   }
 }
 
