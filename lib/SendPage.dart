@@ -53,7 +53,7 @@ class _SendPageState extends State<SendPage> {
         // Expanded(flex: 0, child: 
           Padding(padding: EdgeInsets.all(70), child:
             ElevatedButton(
-              onPressed: () => sendEmail(controller.text),
+              onPressed: () => {},
               style: ButtonStyle(
               backgroundColor: MaterialStateProperty.all<Color>(Colors.blue),
               padding: MaterialStateProperty.all<EdgeInsets>(EdgeInsets.all(20)),

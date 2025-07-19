@@ -20,10 +20,6 @@ var localAudioFileName;
 var filePath = "";
 List<String> recordingFilePaths = List.empty(growable: true); // Assumes that the last WAV is the current WAV
 
-void updatePageFunc() {
-
-}
-
 class MyHomePage extends StatefulWidget {
 
   const MyHomePage({super.key});
@@ -120,6 +116,7 @@ class _MyHomePageState extends State<MyHomePage> {
           dir.create();
         }
         tempWavPath = '${dir.path}/recording${recordingFilePaths.length.toString()}.WAV';
+        File(tempWavPath).deleteSync();
         recordingFilePaths.add(tempWavPath);
         await record.start(recordConfig, path: tempWavPath);
         safePrint("Recording temporarily saved in app files");

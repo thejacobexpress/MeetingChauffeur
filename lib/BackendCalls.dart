@@ -23,8 +23,8 @@ Future<Map<String, dynamic>> uploadJsonToS3() async {
     'location': false, // not dealt with on server end
     'summary': false,
     'transcript': true,
-    'action': false,
-    'decisions': false,
+    'action': true,
+    'decisions': true,
     'names': false,
     'topics':false,
     'purpose':false,
@@ -130,27 +130,42 @@ void uploadWAVtoS3(String path) async {
         localAudioFileName = file.path.split('/').last;;
         safePrint('Uploading file: $localAudioFileName with size of ${file.lengthSync()/1000000}MB');
 
-        final dio = Dio();
-        final response = await dio.put(
-          await generatePresignedPutUrl(localAudioFileName),
-          data: file.openRead(),
-          options: Options(
-            headers: {
-              HttpHeaders.contentTypeHeader: 'audio/wav',
-              HttpHeaders.contentLengthHeader: await file.length()
-            },
-            sendTimeout: Duration(seconds: 300),
-            receiveTimeout: Duration(seconds: 300),
-          ),
-          onSendProgress: (sent, total) {
-            final percent = (sent / total * 100).toStringAsFixed(1);
-            print('Uploading: $percent%');
-          },
-        );
-        safePrint("file uploaded!");
+        bool uploadSucceeded = false;
+        int retries = 0;
+        while(retries<10) {
+          try {
+            final dio = Dio();
+            final response = await dio.put(
+              await generatePresignedPutUrl(localAudioFileName),
+              data: file.openRead(),
+              options: Options(
+                headers: {
+                  HttpHeaders.contentTypeHeader: 'audio/wav',
+                  HttpHeaders.contentLengthHeader: await file.length()
+                },
+                sendTimeout: Duration(seconds: 300),
+                receiveTimeout: Duration(seconds: 300),
+              ),
+              onSendProgress: (sent, total) {
+                final percent = (sent / total * 100).toStringAsFixed(1);
+                print('Uploading: $percent%');
+              },
+            );
+            uploadSucceeded = true;
+            safePrint("file uploaded!");
+            break;
+          } on DioException catch (e) {
+            retries++;
+            print("failed to upload. Trying again.");
+          }
+        }
+        if(!uploadSucceeded) {
+          safePrint("Sorry, MeetingSummarizer could not process your file. Please try again.");
+        }
 
         await Future.delayed(Duration(seconds: 3));
-        await retrieveFilesFromS3(json);
+        Map<String, String> responses = await retrieveFilesFromS3(json);
+        await sendEmail(responses);
 
       } on Exception catch (e, st) {
         safePrint("error: $e");
@@ -161,7 +176,7 @@ void uploadWAVtoS3(String path) async {
 
 Future<String> downloadFileContent(String localDir, String serverDir, String type) async {
   int retries = 0;
-  while(retries < 10) {
+  while(retries < 100) {
     try {
       final result = await Amplify.Storage.downloadFile(
         path: StoragePath.fromString(serverDir),
@@ -171,21 +186,22 @@ Future<String> downloadFileContent(String localDir, String serverDir, String typ
 
       // Delete the summary file in the s3 after retrieving it
       final deleteResult = await Amplify.Storage.remove(
-        path: StoragePath.fromString('public/summaries/${localAudioFileName.replaceAll('.WAV', '.txt')}'),
+        path: StoragePath.fromString(serverDir),
         options: StorageRemoveOptions(bucket: StorageBucket.fromBucketInfo(BucketInfo(bucketName: 'meetingsummarizerapp3e62d7c6d4654f17bc7d042793aca958-dev', region: 'us-west-2'))),
       ).result;
 
-      File(localDir + localAudioFileName.replaceAll('.WAV', '.txt')).readAsString().then((content) {
-        safePrint('$type: $content');
-        return content;
-      });
 
-      break;
+      final content = await File(localDir + localAudioFileName.replaceAll('.WAV', '.txt')).readAsString();
+      safePrint('$type: $content');
+      return content;
 
     } on Exception catch(e) {
       safePrint("File not ready yet.");
-      await Future.delayed(Duration(seconds: 1));
+      await Future.delayed(Duration(seconds: 2));
       retries++;
+      if(retries==10) {
+        safePrint("could not obtain file.");
+      }
     }
   }
   return "";
@@ -313,4 +329,12 @@ Future<Map<String, String>> retrieveFilesFromS3(Map<String, dynamic> json) async
 
   return genList;
 
+}
+
+Future<void> sendEmail(Map<String, String> content) async {
+  Amplify.API.post(
+    "/sendEmails",
+    apiName: "MeetingSummarizerAPI",
+    body: HttpPayload.json(content)
+  );
 }
