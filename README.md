@@ -1,7 +1,7 @@
 # MeetingSummarizer-App
 
 ## Data available to send recipients
-- Time and date (time always available)
+- Time and date (always available)
 - Location
 - Summary
 - Transcript
