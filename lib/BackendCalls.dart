@@ -10,13 +10,33 @@ import 'package:path_provider/path_provider.dart';
 
 import 'main.dart';
 
-import 'homePage.dart';
+import 'package:meeting_summarizer_app/main_sequence/homePage.dart';
 
 import 'dart:convert';
 import 'package:meeting_summarizer_app/widgets/Generation.dart';
 
 import 'package:aws_signature_v4/aws_signature_v4.dart';
 import 'package:dio/dio.dart';
+
+enum GenerationType {
+  LOCATION('location', "Location"),
+  SUMMARY('summary', "Summary"),
+  TRANSCRIPT('transcript', "Transcript"),
+  ACTION('action', "Action Items"),
+  DECISION('decisions', "Decisions Made"),
+  NAMES('names', "Topics"),
+  TOPICS('topics', "Topics"),
+  PURPOSE('purpose', "Purpose"),
+  NEXT_STEPS('next_steps', "Next Steps"),
+  CORRECTIONS('corrections', "Corrections to Previous Meeting"),
+  QUESTIONS('questions', "Questions Asked"),
+  NONE('none', "None");
+
+  const GenerationType(this.value, this.name);
+
+  final String name;
+  final String value;
+}
 
 Map<String, String> genList = {};
 bool genListReady = false;
@@ -145,7 +165,7 @@ void uploadWAVtoS3(String path, Map<String, dynamic> json) async {
             break;
           } on DioException catch (e) {
             retries++;
-            print("failed to upload. Trying again.");
+            print("failed to upload: $e");
           }
         }
         if(!uploadSucceeded) {
@@ -200,7 +220,7 @@ Future<Map<String, String>> retrieveFilesFromS3(Map<String, dynamic> json) async
   final appDocDir = await getApplicationDocumentsDirectory();
   var localDir;
   var serverDir;
-  var type;
+  GenerationType type = GenerationType.NONE;
   var canAddEntry = false;
 
   for(final entry in json.entries) {
@@ -210,7 +230,7 @@ Future<Map<String, String>> retrieveFilesFromS3(Map<String, dynamic> json) async
         if (entry.value) {
           localDir = Directory('${appDocDir.path}/summaries/');
           serverDir = 'public/summaries/${localAudioFileName.replaceAll('.WAV', '.txt')}';
-          type = "summary";
+          type = GenerationType.SUMMARY;
           if(localDir.existsSync()) {} else {
             localDir.create();
           }
@@ -220,7 +240,7 @@ Future<Map<String, String>> retrieveFilesFromS3(Map<String, dynamic> json) async
         if (entry.value) {
           localDir = Directory('${appDocDir.path}/transcriptions/');
           serverDir = 'public/transcriptions/${localAudioFileName.replaceAll('.WAV', '.txt')}';
-          type = "transcript";
+          type = GenerationType.TRANSCRIPT;
           if(localDir.existsSync()) {} else {
             localDir.create();
           }
@@ -230,7 +250,7 @@ Future<Map<String, String>> retrieveFilesFromS3(Map<String, dynamic> json) async
         if (entry.value) {
           localDir = Directory('${appDocDir.path}/action/');
           serverDir = 'public/action/${localAudioFileName.replaceAll('.WAV', '.txt')}';
-          type = "action";
+          type = GenerationType.ACTION;
           if(localDir.existsSync()) {} else {
             localDir.create();
           }
@@ -240,7 +260,7 @@ Future<Map<String, String>> retrieveFilesFromS3(Map<String, dynamic> json) async
         if (entry.value) {
           localDir = Directory('${appDocDir.path}/decisions/');
           serverDir = 'public/decisions/${localAudioFileName.replaceAll('.WAV', '.txt')}';
-          type = "decisions";
+          type = GenerationType.DECISION;
           if(localDir.existsSync()) {} else {
             localDir.create();
           }
@@ -250,7 +270,7 @@ Future<Map<String, String>> retrieveFilesFromS3(Map<String, dynamic> json) async
         if (entry.value) {
           localDir = Directory('${appDocDir.path}/names/');
           serverDir = 'public/names/${localAudioFileName.replaceAll('.WAV', '.txt')}';
-          type = "names";
+          type = GenerationType.NAMES;
           if(localDir.existsSync()) {} else {
             localDir.create();
           }
@@ -260,7 +280,7 @@ Future<Map<String, String>> retrieveFilesFromS3(Map<String, dynamic> json) async
         if (entry.value) {
           localDir = Directory('${appDocDir.path}/topics/');
           serverDir = 'public/topics/${localAudioFileName.replaceAll('.WAV', '.txt')}';
-          type = "topics";
+          type = GenerationType.TOPICS;
           if(localDir.existsSync()) {} else {
             localDir.create();
           }
@@ -270,7 +290,7 @@ Future<Map<String, String>> retrieveFilesFromS3(Map<String, dynamic> json) async
         if (entry.value) {
           localDir = Directory('${appDocDir.path}/purpose/');
           serverDir = 'public/purpose/${localAudioFileName.replaceAll('.WAV', '.txt')}';
-          type = "purpose";
+          type = GenerationType.PURPOSE;
           if(localDir.existsSync()) {} else {
             localDir.create();
           }
@@ -280,7 +300,7 @@ Future<Map<String, String>> retrieveFilesFromS3(Map<String, dynamic> json) async
         if (entry.value) {
           localDir = Directory('${appDocDir.path}/next_steps/');
           serverDir = 'public/next_steps/${localAudioFileName.replaceAll('.WAV', '.txt')}';
-          type = "next_steps";
+          type = GenerationType.NEXT_STEPS;
           if(localDir.existsSync()) {} else {
             localDir.create();
           }
@@ -290,7 +310,7 @@ Future<Map<String, String>> retrieveFilesFromS3(Map<String, dynamic> json) async
         if (entry.value) {
           localDir = Directory('${appDocDir.path}/corrections/');
           serverDir = 'public/corrections/${localAudioFileName.replaceAll('.WAV', '.txt')}';
-          type = "corrections";
+          type = GenerationType.CORRECTIONS;
           if(localDir.existsSync()) {} else {
             localDir.create();
           }
@@ -300,7 +320,7 @@ Future<Map<String, String>> retrieveFilesFromS3(Map<String, dynamic> json) async
         if (entry.value) {
           localDir = Directory('${appDocDir.path}/questions/');
           serverDir = 'public/questions/${localAudioFileName.replaceAll('.WAV', '.txt')}';
-          type = "questions";
+          type = GenerationType.QUESTIONS;
           if(localDir.existsSync()) {} else {
             localDir.create();
           }
@@ -309,7 +329,7 @@ Future<Map<String, String>> retrieveFilesFromS3(Map<String, dynamic> json) async
       }
     
     if(canAddEntry) {
-      genList['$type'] = await downloadFileContent(localDir.path, serverDir, type);
+      genList[type.value] = await downloadFileContent(localDir.path, serverDir, type.value);
     }
 
   }

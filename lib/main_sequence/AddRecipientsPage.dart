@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:meeting_summarizer_app/widgets/Group.dart';
 import 'package:meeting_summarizer_app/widgets/Individual.dart';
-import 'package:meeting_summarizer_app/AddGenerationsPage.dart';
+import 'package:meeting_summarizer_app/main_sequence/AddGenerationsPage.dart';
 
 class AddRecipientsPage extends StatefulWidget {
   const AddRecipientsPage({super.key});

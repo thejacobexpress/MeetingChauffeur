@@ -1,7 +1,7 @@
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:meeting_summarizer_app/BackendCalls.dart';
-import 'package:meeting_summarizer_app/EmailSendingPage.dart';
+import 'package:meeting_summarizer_app/main_sequence/EmailSendingPage.dart';
 import 'package:meeting_summarizer_app/widgets/Generation.dart';
 
 Future<int> response = Future.value(0);
@@ -36,11 +36,12 @@ class _FinalizeSendPageState extends State<FinalizeSendPage> {
     });
   }
 
+  // Get a list of widgets(shows text generations) that reflect what the user chose to generate in previous page.
   List<Widget> getGenerations() {
-    List<Widget> widgetList =[];
-    for (final entry in widget.json.entries) {
+    List<Widget> widgetList = [];
+    for (final (index, entry) in widget.json.entries.indexed) {
       if(entry.value) {
-        widgetList.add(Generation(name: entry.key[0].toUpperCase(), genValue: entry.key));
+        widgetList.add(Generation(name: GenerationType.values[index].name, genValue: GenerationType.values[index].value));
       }
     }
     return widgetList;

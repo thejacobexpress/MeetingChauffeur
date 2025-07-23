@@ -1,8 +1,8 @@
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
-import 'package:meeting_summarizer_app/AddRecipientsPage.dart';
+import 'package:meeting_summarizer_app/main_sequence/AddRecipientsPage.dart';
 
-import 'HomePage.dart';
+import 'main_sequence/HomePage.dart';
 import 'SendPage.dart';
 import 'MeetingsPage.dart';
 

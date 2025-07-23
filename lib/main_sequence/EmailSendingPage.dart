@@ -3,11 +3,11 @@ import 'dart:convert';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:amplify_api/amplify_api.dart';
 import 'package:flutter/material.dart';
-import 'package:meeting_summarizer_app/HomePage.dart';
+import 'package:meeting_summarizer_app/main_sequence/HomePage.dart';
 import 'package:meeting_summarizer_app/widgets/Group.dart';
 import 'package:meeting_summarizer_app/widgets/Individual.dart';
-import 'package:meeting_summarizer_app/AddGenerationsPage.dart';
-import 'package:meeting_summarizer_app/FinalizeSendPage.dart';
+import 'package:meeting_summarizer_app/main_sequence/AddGenerationsPage.dart';
+import 'package:meeting_summarizer_app/main_sequence/FinalizeSendPage.dart';
 import 'dart:async';
 
 class EmailSendingPage extends StatefulWidget {

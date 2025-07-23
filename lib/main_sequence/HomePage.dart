@@ -10,7 +10,7 @@ import 'package:record/record.dart';
 
 import 'package:amplify_flutter/amplify_flutter.dart';
 
-import 'AddRecipientsPage.dart';
+import 'package:meeting_summarizer_app/main_sequence/AddRecipientsPage.dart';
 
 var localAudioFileName;
 var filePath = "";
