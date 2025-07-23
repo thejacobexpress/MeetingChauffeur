@@ -102,7 +102,7 @@ class _MyPageState extends State<MyPage> {
       children:
         <Widget>[
           Navigator(
-            onGenerateRoute: (settings) {return MaterialPageRoute(builder: (context) => MyHomePage());},
+            onGenerateRoute: (settings) {return MaterialPageRoute(builder: (context) => MyHomePage(), settings: RouteSettings(arguments: {'targetRoute': true}));},
           ),
           Navigator(
             onGenerateRoute: (settings) {return MaterialPageRoute(builder: (context) => MeetingsPage());},

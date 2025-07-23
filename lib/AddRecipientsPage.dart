@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:meeting_summarizer_app/widgets/Group.dart';
 import 'package:meeting_summarizer_app/widgets/Individual.dart';
-import 'package:meeting_summarizer_app/BackendCalls.dart';
-import 'HomePage.dart';
+import 'package:meeting_summarizer_app/AddGenerationsPage.dart';
 
 class AddRecipientsPage extends StatefulWidget {
   const AddRecipientsPage({super.key});
@@ -21,6 +20,12 @@ class AddRecipientsPage extends StatefulWidget {
 }
 
 class _AddRecipientsPageState extends State<AddRecipientsPage> {
+
+  void goToGenerationsPage() {
+    setState(() {
+      Navigator.of(context).push(MaterialPageRoute(builder: (context) => AddGenerationsPage()));
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +71,7 @@ class _AddRecipientsPageState extends State<AddRecipientsPage> {
               width: 250,
               height: 75,
               child: ElevatedButton(
-                onPressed: () => uploadWAVtoS3(recordingFilePaths.last), // Assumes that the last WAV is the current WAV
+                onPressed: () => goToGenerationsPage(), // Assumes that the last WAV is the current WAV
                 style: ButtonStyle(
                 backgroundColor: MaterialStateProperty.all<Color>(Colors.blue),
                 padding: MaterialStateProperty.all<EdgeInsets>(EdgeInsets.all(20)),

@@ -8,12 +8,8 @@ import 'package:path_provider/path_provider.dart';
 
 import 'package:record/record.dart';
 
-import 'package:flutter_file_dialog/flutter_file_dialog.dart';
-
 import 'package:amplify_flutter/amplify_flutter.dart';
 
-import 'BackendCalls.dart';
-import 'main.dart';
 import 'AddRecipientsPage.dart';
 
 var localAudioFileName;
@@ -112,14 +108,16 @@ class _MyHomePageState extends State<MyHomePage> {
         final appDocDir = await getApplicationDocumentsDirectory();
         final dir = Directory('${appDocDir.path}/recordings');
         if(dir.existsSync()) {
-        }else {
+        } else {
           dir.create();
         }
         tempWavPath = '${dir.path}/recording${recordingFilePaths.length.toString()}.WAV';
-        File(tempWavPath).deleteSync();
+        try{
+          File(tempWavPath).deleteSync();
+        } on PathNotFoundException catch(e) {}
         recordingFilePaths.add(tempWavPath);
         await record.start(recordConfig, path: tempWavPath);
-        safePrint("Recording temporarily saved in app files");
+        safePrint("Recording being written to $tempWavPath");
       } else {
         safePrint("Permission denied");
       }

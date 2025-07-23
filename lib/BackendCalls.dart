@@ -13,37 +13,26 @@ import 'main.dart';
 import 'homePage.dart';
 
 import 'dart:convert';
+import 'package:meeting_summarizer_app/widgets/Generation.dart';
 
 import 'package:aws_signature_v4/aws_signature_v4.dart';
 import 'package:dio/dio.dart';
 
-Future<Map<String, dynamic>> uploadJsonToS3() async {
+Map<String, String> genList = {};
+bool genListReady = false;
 
-  final Map<String, dynamic> json = {
-    'location': false, // not dealt with on server end
-    'summary': false,
-    'transcript': true,
-    'action': true,
-    'decisions': true,
-    'names': false,
-    'topics':false,
-    'purpose':false,
-    'next_steps':false,
-    'corrections':false,
-    'questions':false
-  };
+Future<Map<String, dynamic>> uploadJsonToS3(String fileName, Map<String, dynamic> json) async {
 
   try {
       final appDocDir = await getApplicationDocumentsDirectory();
       final dir = Directory('${appDocDir.path}/jsons');
-      final int fileNumAvailable = recordingFilePaths.length;
       File file;
       if(dir.existsSync()) {
-        file = File('${dir.path}/recording$fileNumAvailable.json');
+        file = File('${dir.path}/$fileName.json');
         file.writeAsStringSync(jsonEncode(json));
       } else {
         dir.create();
-        file = File('${dir.path}/recording$fileNumAvailable.json');
+        file = File('${dir.path}/$fileName.json');
         file.writeAsStringSync(jsonEncode(json));
       }
       // safePrint(file);
@@ -95,9 +84,9 @@ Future<String> generatePresignedPutUrl (String fileName) async {
   return signedRequest.toString();
 }
 
-void uploadWAVtoS3(String path) async {
+void uploadWAVtoS3(String path, Map<String, dynamic> json) async {
 
-  final json = await uploadJsonToS3();
+  final newJson = await uploadJsonToS3(path.split("/").last.replaceAll(".WAV", ""), json);
 
   // Ask user to select a WAV file
   if(path == "") {
@@ -164,12 +153,12 @@ void uploadWAVtoS3(String path) async {
         }
 
         await Future.delayed(Duration(seconds: 3));
-        Map<String, String> responses = await retrieveFilesFromS3(json);
-        await sendEmail(responses);
+        Map<String, String> responses = await retrieveFilesFromS3(newJson);
 
-      } on Exception catch (e, st) {
+        // await sendEmail(responses);
+
+      } on Exception catch (e) {
         safePrint("error: $e");
-        safePrint("Stacktrace: $st");
       }
     }
 }
@@ -196,7 +185,7 @@ Future<String> downloadFileContent(String localDir, String serverDir, String typ
       return content;
 
     } on Exception catch(e) {
-      safePrint("File not ready yet.");
+      safePrint("File not generated yet.");
       await Future.delayed(Duration(seconds: 2));
       retries++;
       if(retries==10) {
@@ -213,8 +202,6 @@ Future<Map<String, String>> retrieveFilesFromS3(Map<String, dynamic> json) async
   var serverDir;
   var type;
   var canAddEntry = false;
-
-  final Map<String, String> genList = {};
 
   for(final entry in json.entries) {
     canAddEntry = false;
@@ -327,14 +314,20 @@ Future<Map<String, String>> retrieveFilesFromS3(Map<String, dynamic> json) async
 
   }
 
+  initGenDisplayed();
+  genListReady = true;
+  safePrint("genList: $genList");
   return genList;
 
 }
 
-Future<void> sendEmail(Map<String, String> content) async {
-  Amplify.API.post(
+// Returns status code
+Future<int> sendEmail(Map<String, String> content) async {
+  final res = Amplify.API.post(
     "/sendEmails",
     apiName: "MeetingSummarizerAPI",
     body: HttpPayload.json(content)
   );
+  final response = await res.response;
+  return response.statusCode;
 }
