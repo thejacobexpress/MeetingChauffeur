@@ -23,7 +23,8 @@ class AddGenerationsPage extends StatefulWidget {
 class _AddGenerationsPageState extends State<AddGenerationsPage> {
 
   final Map<String, dynamic> json = {
-    GenerationType.LOCATION.value: false, // not dealt with on server end
+    GenerationType.DATE_TIME.value : false,
+    GenerationType.LOCATION.value: false,
     GenerationType.SUMMARY.value: false,
     GenerationType.TRANSCRIPT.value: true,
     GenerationType.ACTION.value: true,
@@ -33,7 +34,8 @@ class _AddGenerationsPageState extends State<AddGenerationsPage> {
     GenerationType.PURPOSE.value:false,
     GenerationType.NEXT_STEPS.value:false,
     GenerationType.CORRECTIONS.value:false,
-    GenerationType.QUESTIONS.value:false
+    GenerationType.QUESTIONS.value:false,
+    "tailored":false, // Var that determines whether the OpenAI model should tailor generations based on recipients' info or not.
   };
 
   void goToFinalizeSendPage(){
@@ -42,19 +44,26 @@ class _AddGenerationsPageState extends State<AddGenerationsPage> {
     });
   }
 
+  void goBack() {
+    setState(() {
+      Navigator.of(context).pop();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Material(child: 
       Column(
         children: [
-          Padding(padding: EdgeInsets.fromLTRB(0, MediaQuery.paddingOf(context).top, 0, 0), child: Text("Choose Insights", style: TextStyle(fontSize: 24))),
+          Padding(padding: EdgeInsets.fromLTRB(0, MediaQuery.paddingOf(context).top, 0, 20), child: Text("Choose Insights", style: TextStyle(fontSize: 24))),
           SizedBox(
-            height: 550,
+            height: 468,
             width: MediaQuery.of(context).size.width,
             child: ListView(
               shrinkWrap: true,
               scrollDirection: Axis.vertical,
               children: [
+                GenerationOption(value: json[GenerationType.DATE_TIME.value], name: GenerationType.DATE_TIME.name, setValue: () => setState(() {json[GenerationType.DATE_TIME.value] = !json[GenerationType.DATE_TIME.value];})),
                 GenerationOption(value: json[GenerationType.LOCATION.value], name: GenerationType.LOCATION.name, setValue: () => setState(() {json[GenerationType.LOCATION.value] = !json[GenerationType.LOCATION.value];})),
                 GenerationOption(value: json[GenerationType.SUMMARY.value], name: GenerationType.SUMMARY.name, setValue: () => setState(() {json[GenerationType.SUMMARY.value] = !json[GenerationType.SUMMARY.value];})),
                 GenerationOption(value: json[GenerationType.TRANSCRIPT.value], name: GenerationType.TRANSCRIPT.name, setValue: () => setState(() {json[GenerationType.TRANSCRIPT.value] = !json[GenerationType.TRANSCRIPT.value];})),
@@ -66,18 +75,19 @@ class _AddGenerationsPageState extends State<AddGenerationsPage> {
                 GenerationOption(value: json[GenerationType.NEXT_STEPS.value], name: GenerationType.NEXT_STEPS.name, setValue: () => setState(() {json[GenerationType.NEXT_STEPS.value] = !json[GenerationType.NEXT_STEPS.value];})),
                 GenerationOption(value: json[GenerationType.CORRECTIONS.value], name: GenerationType.CORRECTIONS.name, setValue: () => setState(() {json[GenerationType.CORRECTIONS.value] = !json[GenerationType.CORRECTIONS.value];})),
                 GenerationOption(value: json[GenerationType.QUESTIONS.value], name: GenerationType.QUESTIONS.name, setValue: () => setState(() {json[GenerationType.QUESTIONS.value] = !json[GenerationType.QUESTIONS.value];})),
+                GenerationOption(value: json['tailored'], name: "Tailored", setValue: () => setState(() {json['tailored'] = !json['tailored'];}))
               ],
             )
           ),
           Padding(
-            padding: EdgeInsets.all(16),
+            padding: EdgeInsets.fromLTRB(16, 10, 16, 0),
             child: SizedBox(
               width: 250,
               height: 75,
               child: ElevatedButton(
                 onPressed: () => {
                   genListReady = false,
-                  genList.clear(),
+                  genMap.clear(),
                   uploadWAVtoS3(recordingFilePaths.last, json),
                   goToFinalizeSendPage()
                 }, // Assumes that the last WAV is the current WAV
@@ -93,7 +103,22 @@ class _AddGenerationsPageState extends State<AddGenerationsPage> {
                 child: Center(child: Text("Generate", style: TextStyle(color: Colors.white, fontSize: 20)))
               ),
             )
+          ),
+          Padding(padding: EdgeInsets.fromLTRB(100, 10, 100, 10), child:
+          ElevatedButton(
+            onPressed: () => goBack(),
+            style: ButtonStyle(
+            backgroundColor: MaterialStateProperty.all<Color>(Colors.blue),
+            padding: MaterialStateProperty.all<EdgeInsets>(EdgeInsets.all(20)),
+            textStyle: MaterialStateProperty.all<TextStyle>(TextStyle(fontSize: 20)),
+            shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+              RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30.0),
+              ),
+            )),
+            child: Center(child: Text("Back", style: TextStyle(color: Colors.white, fontSize: 20)))
           )
+        )
         ]
       )
     );

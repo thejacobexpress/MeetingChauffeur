@@ -12,9 +12,15 @@ import 'package:amplify_flutter/amplify_flutter.dart';
 
 import 'package:meeting_summarizer_app/main_sequence/AddRecipientsPage.dart';
 
+import 'package:location/location.dart';
+
 var localAudioFileName;
 var filePath = "";
 List<String> recordingFilePaths = List.empty(growable: true); // Assumes that the last WAV is the current WAV
+
+DateTime startTime = DateTime(DateTime.now().year);
+DateTime endTime = DateTime(DateTime.now().year);
+var locationData;
 
 class MyHomePage extends StatefulWidget {
 
@@ -83,6 +89,31 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  void getLocation() async {
+    Location location = Location();
+
+    bool serviceEnabled;
+    PermissionStatus permissionGranted;
+
+    serviceEnabled = await location.serviceEnabled();
+    if (!serviceEnabled) {
+      serviceEnabled = await location.requestService();
+      if (!serviceEnabled) {
+        return;
+      }
+    }
+
+    permissionGranted = await location.hasPermission();
+    if (permissionGranted == PermissionStatus.denied) {
+      permissionGranted = await location.requestPermission();
+      if (permissionGranted != PermissionStatus.granted) {
+        return;
+      }
+    }
+
+    locationData = await location.getLocation();
+  }
+
   @override
   initState() {
     super.initState();
@@ -94,6 +125,9 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void startRecording() {
+
+    startTime = DateTime.now();
+    getLocation();
 
     configureInputs(true).then((_) async {
       if (await record.hasPermission()) {
@@ -134,6 +168,8 @@ class _MyHomePageState extends State<MyHomePage> {
   void stopRecording() async {
     safePrint("Stop Recording");
     record.stop();
+
+    endTime = DateTime.now();
 
     showDialog(context: context, builder: (BuildContext context) {
       return AlertDialog(

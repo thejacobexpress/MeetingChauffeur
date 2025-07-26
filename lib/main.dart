@@ -1,10 +1,10 @@
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:meeting_summarizer_app/main_sequence/AddRecipientsPage.dart';
+import 'package:meeting_summarizer_app/send_pages/GroupsIndividualsPage.dart';
 
 import 'main_sequence/HomePage.dart';
-import 'SendPage.dart';
-import 'MeetingsPage.dart';
+import 'package:meeting_summarizer_app/send_pages/SendPage.dart';
 
 import 'package:amplify_api/amplify_api.dart';
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
@@ -78,10 +78,6 @@ class _MyPageState extends State<MyPage> {
           label: 'Home',
         ),
         NavigationDestination(
-          icon: Icon(Icons.people),
-          label: 'Meetings',
-        ),
-        NavigationDestination(
           icon: Icon(Icons.send),
           label: 'Send',
         ),
@@ -105,10 +101,7 @@ class _MyPageState extends State<MyPage> {
             onGenerateRoute: (settings) {return MaterialPageRoute(builder: (context) => MyHomePage(), settings: RouteSettings(arguments: {'targetRoute': true}));},
           ),
           Navigator(
-            onGenerateRoute: (settings) {return MaterialPageRoute(builder: (context) => MeetingsPage());},
-          ),
-          Navigator(
-            onGenerateRoute: (settings) {return MaterialPageRoute(builder: (context) => SendPage());},
+            onGenerateRoute: (settings) {return MaterialPageRoute(builder: (context) => GroupsIndividualsPage());},
           )
         ],
       )

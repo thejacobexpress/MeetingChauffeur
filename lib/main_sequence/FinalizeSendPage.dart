@@ -27,12 +27,18 @@ class FinalizeSendPage extends StatefulWidget {
 class _FinalizeSendPageState extends State<FinalizeSendPage> {
 
   Future<int> getEmailResponse() async {
-    return await sendEmail(genList);
+    return await sendEmail(genMap);
   }
 
   void goToEmailSendingPage() {
     setState(() {
       Navigator.of(context).push(MaterialPageRoute(builder: (context) => EmailSendingPage()));
+    });
+  }
+
+  void goBack() {
+    setState(() {
+      Navigator.of(context).pop();
     });
   }
 
@@ -55,7 +61,7 @@ class _FinalizeSendPageState extends State<FinalizeSendPage> {
           Padding(padding: EdgeInsets.fromLTRB(0, MediaQuery.paddingOf(context).top, 0, 0), child: Text("Generations", style: TextStyle(fontSize: 24))),
           Padding(padding: EdgeInsets.all(10), child: Text("This is what your recipients will receive.", style: TextStyle(fontSize: 16, color: Colors.grey))),
           SizedBox(
-            height: 500,
+            height: 442,
             width: MediaQuery.of(context).size.width,
             child: ListView(
               shrinkWrap: true,
@@ -64,7 +70,7 @@ class _FinalizeSendPageState extends State<FinalizeSendPage> {
             )
           ),
           Padding(
-            padding: EdgeInsets.all(16),
+            padding: EdgeInsets.fromLTRB(16, 10, 16, 0),
             child: SizedBox(
               width: 250,
               height: 75,
@@ -87,7 +93,22 @@ class _FinalizeSendPageState extends State<FinalizeSendPage> {
                 child: Center(child: Text("Send", style: TextStyle(color: Colors.white, fontSize: 20)))
               ),
             )
+          ),
+          Padding(padding: EdgeInsets.fromLTRB(100, 10, 100, 10), child:
+          ElevatedButton(
+            onPressed: () => goBack(),
+            style: ButtonStyle(
+            backgroundColor: MaterialStateProperty.all<Color>(Colors.blue),
+            padding: MaterialStateProperty.all<EdgeInsets>(EdgeInsets.all(20)),
+            textStyle: MaterialStateProperty.all<TextStyle>(TextStyle(fontSize: 20)),
+            shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+              RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30.0),
+              ),
+            )),
+            child: Center(child: Text("Back", style: TextStyle(color: Colors.white, fontSize: 20)))
           )
+        )
         ]
       )
     );

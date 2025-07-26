@@ -61,13 +61,13 @@ class _EmailSendingPageState extends State<EmailSendingPage> {
   List<Widget> loading() {
     return [
           Center(child: Padding(padding: EdgeInsets.all(10), child: CircularProgressIndicator())),
-          Center(child:Padding(padding: EdgeInsets.all(10), child: Text("Sending...", style: TextStyle(fontSize: 18)))),
+          Center(child:Padding(padding: EdgeInsets.all(10), child: Text("Sending...", style: TextStyle(fontSize: 20)))),
         ];
   }
 
   List<Widget> done() {
     return [
-          Center(child:Padding(padding: EdgeInsets.all(10), child: Text("Sent!", style: TextStyle(fontSize: 18)))),
+          Center(child:Padding(padding: EdgeInsets.all(10), child: Text("Sent!", style: TextStyle(fontSize: 20)))),
         ];
   }
 

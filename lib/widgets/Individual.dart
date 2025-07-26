@@ -1,12 +1,20 @@
+import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
-
-var isSelected = false;
+import 'package:meeting_summarizer_app/classes/GroupClass.dart';
+import 'package:meeting_summarizer_app/main_sequence/AddRecipientsPage.dart';
+import 'package:meeting_summarizer_app/send_pages/NewGroupPage.dart';
+import 'package:meeting_summarizer_app/send_pages/SingleGroupPage.dart';
+import 'package:meeting_summarizer_app/send_pages/SingleIndividualPage.dart';
+import 'package:meeting_summarizer_app/classes/IndividualClass.dart';
 
 class Individual extends StatefulWidget {
-  final String individualName;
+  final IndividualClass indivClass;
   final Color individualColor;
+  final bool checkable;
+  final GroupClass newGroup; // Group that this individual will be added to (if user is adding this individual to a new group)
+  final Function addToIndividuals;
 
-  const Individual({super.key, required this.individualName, required this.individualColor});
+  const Individual({super.key, required this.indivClass, required this.individualColor, required this.checkable, required this.newGroup, required this.addToIndividuals});
 
 
   @override
@@ -15,15 +23,50 @@ class Individual extends StatefulWidget {
 }
 
 class _IndividualState extends State<Individual> {
+
+  var isSelected = false;
+
+  void goToIndividualPage(IndividualClass individual) {
+    setState(() {
+      Navigator.of(context).push(MaterialPageRoute(builder: (context) => SingleIndividualPage(individual: individual)));
+    });
+  }
+
+  void goBack() {
+    setState(() {
+      Navigator.of(context).pop();
+    });
+  }
+
+  Widget getCheckboxWidget() {
+    if(widget.checkable) {
+      return Checkbox(value: isSelected, onChanged: (value) => setState(() {isSelected = value!;}));
+    } else {
+      return Center();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
       return GestureDetector(
         onTap: () => setState(() {
-          isSelected = !isSelected;
+          if(widget.checkable) {
+            isSelected = !isSelected;
+            if(isSelected) {
+              recipients.add(widget.indivClass);
+            } else {
+              recipients.remove(widget.indivClass);
+            }
+          } else if (widget.newGroup != noGroup) {
+            indivToAdd = widget.indivClass;
+            widget.addToIndividuals();
+          } else {
+            goToIndividualPage(widget.indivClass);
+          }
         }),
         child: Container(
           child: Padding(
-            padding: EdgeInsets.all(0),
+            padding: EdgeInsets.fromLTRB(20, 5, 20, 0),
             child: Column(
               children: [
                 SizedBox(
@@ -32,10 +75,8 @@ class _IndividualState extends State<Individual> {
                   child: Container(
                     decoration: BoxDecoration(color: widget.individualColor),
                     child: Center(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      Text(widget.individualName, style: TextStyle(fontSize: 16)), 
-                      Checkbox(value: isSelected, onChanged: (value) => setState(() {
-                        isSelected = value!;
-                      }))
+                      Text(widget.indivClass.name, style: TextStyle(fontSize: 16)), 
+                      getCheckboxWidget()
                     ]))
                   ),
                 ),

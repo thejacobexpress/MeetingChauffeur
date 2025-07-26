@@ -9,7 +9,7 @@ Map<String, bool> genDisplayed = {};
 
 void initGenDisplayed() {
   genDisplayed.clear();
-  for(final entry in genList.entries) {
+  for(final entry in genMap.entries) {
     genDisplayed[entry.key] = false;
   }
 }
@@ -29,7 +29,7 @@ class _GenerationState extends State<Generation> {
 
   Widget getGenWidget() { // Returns either loading or generated string based on progress
     timer = Timer.periodic(Duration(seconds: 1), (Timer t) {
-      if (genList[widget.genValue] != null && genDisplayed[widget.genValue] == false) {
+      if (genMap[widget.genValue] != null && genDisplayed[widget.genValue] == false) {
         runZonedGuarded(() => 
           setState(() {
             genDisplayed[widget.genValue] = true;
@@ -40,7 +40,7 @@ class _GenerationState extends State<Generation> {
         );
       }
     });
-    return Padding(padding: EdgeInsets.all(10), child: (genDisplayed[widget.genValue] == false || genList[widget.genValue] == null) ? CircularProgressIndicator() : Text(genList[widget.genValue]!, style: TextStyle(fontSize: 18)));
+    return Padding(padding: EdgeInsets.all(10), child: (genDisplayed[widget.genValue] == false || genMap[widget.genValue] == null) ? CircularProgressIndicator() : Text(genMap[widget.genValue]!, style: TextStyle(fontSize: 16)));
   }
 
   @override

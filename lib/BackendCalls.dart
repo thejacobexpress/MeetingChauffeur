@@ -6,11 +6,15 @@ import 'package:amplify_storage_s3/amplify_storage_s3.dart';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/widgets.dart';
+import 'package:location/location.dart';
+import 'package:meeting_summarizer_app/classes/GroupClass.dart';
+import 'package:meeting_summarizer_app/classes/IndividualClass.dart';
+import 'package:meeting_summarizer_app/main_sequence/AddRecipientsPage.dart';
+import 'package:meeting_summarizer_app/main_sequence/HomePage.dart';
+import 'package:meeting_summarizer_app/widgets/GenerationOption.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'main.dart';
-
-import 'package:meeting_summarizer_app/main_sequence/homePage.dart';
 
 import 'dart:convert';
 import 'package:meeting_summarizer_app/widgets/Generation.dart';
@@ -18,13 +22,19 @@ import 'package:meeting_summarizer_app/widgets/Generation.dart';
 import 'package:aws_signature_v4/aws_signature_v4.dart';
 import 'package:dio/dio.dart';
 
+import 'package:geocoding/geocoding.dart';
+
+const String bucket = "meetingsummarizerapp3e62d7c6d4654f17bc7d042793aca958-dev";
+const String region = "us-west-2";
+
 enum GenerationType {
-  LOCATION('location', "Location"),
+  DATE_TIME('date_time', "Date and Time"), // Not dealt with on server end
+  LOCATION('location', "Location"), // Not dealt with on server end
   SUMMARY('summary', "Summary"),
   TRANSCRIPT('transcript', "Transcript"),
   ACTION('action', "Action Items"),
   DECISION('decisions', "Decisions Made"),
-  NAMES('names', "Topics"),
+  NAMES('names', "Names"),
   TOPICS('topics', "Topics"),
   PURPOSE('purpose', "Purpose"),
   NEXT_STEPS('next_steps', "Next Steps"),
@@ -38,8 +48,24 @@ enum GenerationType {
   final String value;
 }
 
-Map<String, String> genList = {};
+Map<String, dynamic> genMap = {};
 bool genListReady = false;
+
+Future<String> getAddress(double lat, double long) async {
+  String address;
+  try {
+    List<Placemark> placemarks = await placemarkFromCoordinates(double.parse(locationData.toString().split(':')[1].substring(1).replaceAll(", long", "")), double.parse(locationData.toString().split(':')[2].substring(1).replaceAll(">", "")));
+    if (placemarks.isNotEmpty) {
+      final Placemark place = placemarks.first;
+      address = "${place.street}, ${place.subLocality}, ${place.locality}, ${place.administrativeArea}, ${place.country}";
+    } else {
+      address = "No address found";
+    }
+  } on Exception catch (e) {
+    address = "Error: $e";
+  }
+  return address;
+}
 
 Future<Map<String, dynamic>> uploadJsonToS3(String fileName, Map<String, dynamic> json) async {
 
@@ -74,11 +100,9 @@ Future<Map<String, dynamic>> uploadJsonToS3(String fileName, Map<String, dynamic
 
 Future<String> generatePresignedPutUrl (String fileName) async {
 
-  final bucket = "meetingsummarizerapp3e62d7c6d4654f17bc7d042793aca958-dev";
   final key = "public/recordings/$fileName";
   final accessKey = "";
   final secretKey = "";
-  final region = "us-west-2";
   
   final serviceConfiguration = S3ServiceConfiguration();
   final awsClient = AWSCredentials(accessKey, secretKey);
@@ -173,7 +197,7 @@ void uploadWAVtoS3(String path, Map<String, dynamic> json) async {
         }
 
         await Future.delayed(Duration(seconds: 3));
-        Map<String, String> responses = await retrieveFilesFromS3(newJson);
+        Map<String, dynamic> responses = await retrieveDataFromS3AndLocal(newJson);
 
         // await sendEmail(responses);
 
@@ -193,12 +217,38 @@ Future<String> downloadFileContent(String localDir, String serverDir, String typ
       ).result;
       safePrint('File downloaded: ${result.downloadedItem}');
 
-      // Delete the summary file in the s3 after retrieving it
-      final deleteResult = await Amplify.Storage.remove(
-        path: StoragePath.fromString(serverDir),
-        options: StorageRemoveOptions(bucket: StorageBucket.fromBucketInfo(BucketInfo(bucketName: 'meetingsummarizerapp3e62d7c6d4654f17bc7d042793aca958-dev', region: 'us-west-2'))),
-      ).result;
+      bool s3FileExists = true;
+      while(s3FileExists) {
+        // Delete the file in the s3 after retrieving it
+        final deleteResult = await Amplify.Storage.remove(
+          path: StoragePath.fromString(serverDir),
+          options: StorageRemoveOptions(bucket: StorageBucket.fromBucketInfo(BucketInfo(bucketName: bucket, region: region))),
+        ).result;
 
+        String parentServerDir;
+        List<String> list = serverDir.split('/');
+        list.removeAt(list.length-1);
+        parentServerDir = "${list.join("/")}/";
+        safePrint("parentServerDir: $parentServerDir");
+        safePrint("bucket: $bucket");
+        safePrint("region: $region");
+        safePrint("s3 file deleted: ${deleteResult.removedItem}");
+        final result = await Amplify.Storage.list(
+          path: StoragePath.fromString(parentServerDir),
+          options: StorageListOptions(
+            bucket: StorageBucket.fromBucketInfo(BucketInfo(bucketName: bucket, region: region)),
+            pluginOptions: S3ListPluginOptions.listAll()
+          )
+        ).result;
+
+        safePrint("items in s3 path: ${result.items}");
+
+        if(result.items.isEmpty) {
+          s3FileExists = false;
+          safePrint("broke from deleting loop!!!");
+        }
+
+      }
 
       final content = await File(localDir + localAudioFileName.replaceAll('.WAV', '.txt')).readAsString();
       safePrint('$type: $content');
@@ -216,16 +266,39 @@ Future<String> downloadFileContent(String localDir, String serverDir, String typ
   return "";
 }
 
-Future<Map<String, String>> retrieveFilesFromS3(Map<String, dynamic> json) async {
+Future<Map<String, dynamic>> retrieveDataFromS3AndLocal(Map<String, dynamic> json) async {
   final appDocDir = await getApplicationDocumentsDirectory();
   var localDir;
   var serverDir;
   GenerationType type = GenerationType.NONE;
   var canAddEntry = false;
 
+  // Get all contacts from recipients list and put them into genMap to send to API Gateway.
+  List<String> emails = [];
+  for(final recipient in recipients) {
+    if(recipient is IndividualClass) {
+      emails.add(recipient.contact);
+    } else if (recipient is GroupClass){
+      for(final individual in recipient.individuals) {
+        emails.add(individual.contact);
+      }
+    }
+  }
+  genMap["recipients"] = emails;
+
   for(final entry in json.entries) {
     canAddEntry = false;
     switch(entry.key) {
+      case("date_time"):
+        if(entry.value) {
+          type = GenerationType.DATE_TIME;
+          canAddEntry = true;
+        }
+      case("location"):
+        if(entry.value) {
+          type = GenerationType.LOCATION;
+          canAddEntry = true;
+        }
       case ("summary"):
         if (entry.value) {
           localDir = Directory('${appDocDir.path}/summaries/');
@@ -327,22 +400,32 @@ Future<Map<String, String>> retrieveFilesFromS3(Map<String, dynamic> json) async
           canAddEntry = true;
         }
       }
-    
-    if(canAddEntry) {
-      genList[type.value] = await downloadFileContent(localDir.path, serverDir, type.value);
+
+    if((entry.key == GenerationType.DATE_TIME.value || entry.key == GenerationType.LOCATION.value) && canAddEntry) {
+      switch(entry.key) {
+        case ("date_time"):
+          genMap[type.value] = "${startTime.month}/${startTime.day}/${startTime.year} - Meeting lasted from ${startTime.hour > 12 ? startTime.hour - 12 : startTime.hour}:${startTime.minute < 10 ? "0${startTime.minute.toString()}" : startTime.minute} to ${endTime.hour > 12 ? endTime.hour - 12 : endTime.hour}:${endTime.minute < 10 ? "0${endTime.minute.toString()}" : endTime.minute}";
+        case ("location"):
+          double lat = double.parse(locationData.toString().split(':')[1].substring(1).replaceAll(", long", ""));
+          double long = double.parse(locationData.toString().split(':')[2].substring(1).replaceAll(">", ""));
+          String address = await getAddress(lat, long);
+          genMap[type.value] = address.replaceAll(", , ", ", ");
+      }
+    } else if(canAddEntry) {
+      genMap[type.value] = await downloadFileContent(localDir.path, serverDir, type.value);
     }
 
   }
 
   initGenDisplayed();
   genListReady = true;
-  safePrint("genList: $genList");
-  return genList;
+  safePrint("genList: $genMap");
+  return genMap;
 
 }
 
 // Returns status code
-Future<int> sendEmail(Map<String, String> content) async {
+Future<int> sendEmail(Map<String, dynamic> content) async {
   final res = Amplify.API.post(
     "/sendEmails",
     apiName: "MeetingSummarizerAPI",
