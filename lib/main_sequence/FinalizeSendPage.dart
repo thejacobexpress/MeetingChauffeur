@@ -1,8 +1,10 @@
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:meeting_summarizer_app/BackendCalls.dart';
+import 'package:meeting_summarizer_app/main_sequence/AddRecipientsPage.dart';
 import 'package:meeting_summarizer_app/main_sequence/EmailSendingPage.dart';
 import 'package:meeting_summarizer_app/widgets/Generation.dart';
+import 'package:meeting_summarizer_app/classes/Recipient.dart';
 
 Future<int> response = Future.value(0);
 
@@ -76,7 +78,7 @@ class _FinalizeSendPageState extends State<FinalizeSendPage> {
               height: 75,
               child: ElevatedButton(
                 onPressed: () => {
-                  if(genListReady) {
+                  if(genListReady && recipients.isNotEmpty) {
                     response = getEmailResponse(),
                     goToEmailSendingPage(),
                   }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:meeting_summarizer_app/classes/GroupClass.dart';
 import 'package:meeting_summarizer_app/send_pages/SingleGroupPage.dart';
-import 'package:meeting_summarizer_app/main_sequence/AddRecipientsPage.dart';
+import 'package:meeting_summarizer_app/classes/Recipient.dart';
 
 var isSelected = false;
 

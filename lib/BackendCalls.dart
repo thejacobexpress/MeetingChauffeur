@@ -9,6 +9,7 @@ import 'package:flutter/widgets.dart';
 import 'package:location/location.dart';
 import 'package:meeting_summarizer_app/classes/GroupClass.dart';
 import 'package:meeting_summarizer_app/classes/IndividualClass.dart';
+import 'package:meeting_summarizer_app/classes/Recipient.dart';
 import 'package:meeting_summarizer_app/main_sequence/AddRecipientsPage.dart';
 import 'package:meeting_summarizer_app/main_sequence/HomePage.dart';
 import 'package:meeting_summarizer_app/widgets/GenerationOption.dart';
@@ -23,9 +24,6 @@ import 'package:aws_signature_v4/aws_signature_v4.dart';
 import 'package:dio/dio.dart';
 
 import 'package:geocoding/geocoding.dart';
-
-const String bucket = "meetingsummarizerapp3e62d7c6d4654f17bc7d042793aca958-dev";
-const String region = "us-west-2";
 
 enum GenerationType {
   DATE_TIME('date_time', "Date and Time"), // Not dealt with on server end
@@ -47,6 +45,9 @@ enum GenerationType {
   final String name;
   final String value;
 }
+
+String bucket = "meetingsummarizerapp3e62d7c6d4654f17bc7d042793aca958-dev";
+String region = "us-west-2";
 
 Map<String, dynamic> genMap = {};
 bool genListReady = false;
@@ -217,9 +218,9 @@ Future<String> downloadFileContent(String localDir, String serverDir, String typ
       ).result;
       safePrint('File downloaded: ${result.downloadedItem}');
 
-      bool s3FileExists = true;
-      while(s3FileExists) {
-        // Delete the file in the s3 after retrieving it
+      // Delete the file in the s3 after retrieving it
+      bool deletedFile = false;
+      for(int i = 0; i < 10; i++) {
         final deleteResult = await Amplify.Storage.remove(
           path: StoragePath.fromString(serverDir),
           options: StorageRemoveOptions(bucket: StorageBucket.fromBucketInfo(BucketInfo(bucketName: bucket, region: region))),
@@ -229,25 +230,30 @@ Future<String> downloadFileContent(String localDir, String serverDir, String typ
         List<String> list = serverDir.split('/');
         list.removeAt(list.length-1);
         parentServerDir = "${list.join("/")}/";
-        safePrint("parentServerDir: $parentServerDir");
-        safePrint("bucket: $bucket");
-        safePrint("region: $region");
-        safePrint("s3 file deleted: ${deleteResult.removedItem}");
-        final result = await Amplify.Storage.list(
-          path: StoragePath.fromString(parentServerDir),
-          options: StorageListOptions(
-            bucket: StorageBucket.fromBucketInfo(BucketInfo(bucketName: bucket, region: region)),
-            pluginOptions: S3ListPluginOptions.listAll()
-          )
-        ).result;
+        try{
+          final result = await Amplify.Storage.list(
+            path: StoragePath.fromString(parentServerDir),
+            options: StorageListOptions(
+              bucket: StorageBucket.fromBucketInfo(BucketInfo(bucketName: bucket, region: region)),
+              pluginOptions: S3ListPluginOptions.listAll()
+            )
+          ).result;
 
-        safePrint("items in s3 path: ${result.items}");
-
-        if(result.items.isEmpty) {
-          s3FileExists = false;
-          safePrint("broke from deleting loop!!!");
+          if(result.items.isEmpty) {
+            deletedFile = true;
+            break;
+          }
+          
+        } on StorageException catch(e) {
+          safePrint("error listing items in s3: $e");
         }
 
+      }
+
+      if(!deletedFile) {
+        safePrint("File could not be deleted from s3: $serverDir");
+      } else {
+        safePrint("File successfully deleted from s3: $serverDir");
       }
 
       final content = await File(localDir + localAudioFileName.replaceAll('.WAV', '.txt')).readAsString();
@@ -419,7 +425,6 @@ Future<Map<String, dynamic>> retrieveDataFromS3AndLocal(Map<String, dynamic> jso
 
   initGenDisplayed();
   genListReady = true;
-  safePrint("genList: $genMap");
   return genMap;
 
 }

@@ -14,6 +14,8 @@ import 'package:meeting_summarizer_app/main_sequence/AddRecipientsPage.dart';
 
 import 'package:location/location.dart';
 
+import 'package:meeting_summarizer_app/classes/Recipient.dart';
+
 var localAudioFileName;
 var filePath = "";
 List<String> recordingFilePaths = List.empty(growable: true); // Assumes that the last WAV is the current WAV
@@ -122,6 +124,7 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       currentInputIndex = 0;
     });
+    recipients = <Recipient>[];
   }
 
   void startRecording() {

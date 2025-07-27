@@ -10,8 +10,6 @@ import 'package:meeting_summarizer_app/widgets/Individual.dart';
 import 'package:meeting_summarizer_app/main_sequence/AddGenerationsPage.dart';
 import 'package:meeting_summarizer_app/classes/GroupClass.dart';
 
-List<Recipient> recipients = [];
-
 class AddRecipientsPage extends StatefulWidget {
   const AddRecipientsPage({super.key});
 

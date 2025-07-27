@@ -6,6 +6,7 @@ import 'package:meeting_summarizer_app/send_pages/NewGroupPage.dart';
 import 'package:meeting_summarizer_app/send_pages/SingleGroupPage.dart';
 import 'package:meeting_summarizer_app/send_pages/SingleIndividualPage.dart';
 import 'package:meeting_summarizer_app/classes/IndividualClass.dart';
+import 'package:meeting_summarizer_app/classes/Recipient.dart';
 
 class Individual extends StatefulWidget {
   final IndividualClass indivClass;
@@ -54,8 +55,10 @@ class _IndividualState extends State<Individual> {
             isSelected = !isSelected;
             if(isSelected) {
               recipients.add(widget.indivClass);
+              safePrint("recipients: $recipients");
             } else {
               recipients.remove(widget.indivClass);
+              safePrint("recipients: $recipients");
             }
           } else if (widget.newGroup != noGroup) {
             indivToAdd = widget.indivClass;

@@ -1,4 +1,6 @@
 
+List<Recipient> recipients = [];
+
 class Recipient {
   
   String name;
