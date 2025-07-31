@@ -4,8 +4,8 @@ List<Recipient> recipients = [];
 class Recipient {
   
   String name;
-  String? info;
+  String info;
 
-  Recipient(this.name, [this.info]);
+  Recipient(this.name, [this.info = ""]);
 
 }

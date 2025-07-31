@@ -1,5 +1,7 @@
+import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:meeting_summarizer_app/main_sequence/FinalizeSendPage.dart';
+import 'package:meeting_summarizer_app/widgets/GenerationHolder.dart';
 import 'package:meeting_summarizer_app/widgets/GenerationOption.dart';
 import 'package:meeting_summarizer_app/BackendCalls.dart';
 import 'package:meeting_summarizer_app/main_sequence/HomePage.dart';
@@ -23,7 +25,7 @@ class AddGenerationsPage extends StatefulWidget {
 class _AddGenerationsPageState extends State<AddGenerationsPage> {
 
   final Map<String, dynamic> json = {
-    GenerationType.DATE_TIME.value : false,
+    GenerationType.DATE_TIME.value : true,
     GenerationType.LOCATION.value: false,
     GenerationType.SUMMARY.value: false,
     GenerationType.TRANSCRIPT.value: true,
@@ -35,7 +37,7 @@ class _AddGenerationsPageState extends State<AddGenerationsPage> {
     GenerationType.NEXT_STEPS.value:false,
     GenerationType.CORRECTIONS.value:false,
     GenerationType.QUESTIONS.value:false,
-    "tailored":false, // Var that determines whether the OpenAI model should tailor generations based on recipients' info or not.
+    "tailored":true, // Var that determines whether the OpenAI model should tailor generations based on recipients' info or not.
   };
 
   void goToFinalizeSendPage(){
@@ -89,6 +91,7 @@ class _AddGenerationsPageState extends State<AddGenerationsPage> {
                   genListReady = false,
                   genMap.clear(),
                   uploadWAVtoS3(recordingFilePaths.last, json),
+                  initDisplayedHolders(),
                   goToFinalizeSendPage()
                 }, // Assumes that the last WAV is the current WAV
                 style: ButtonStyle(

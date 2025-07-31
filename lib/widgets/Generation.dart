@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
@@ -5,20 +7,15 @@ import 'package:http/http.dart';
 import 'package:meeting_summarizer_app/BackendCalls.dart';
 import 'dart:async';
 
-Map<String, bool> genDisplayed = {};
-
-void initGenDisplayed() {
-  genDisplayed.clear();
-  for(final entry in genMap.entries) {
-    genDisplayed[entry.key] = false;
-  }
-}
+// Keep track of the generations that have been downloaded and shown to the user.
+Map<String, Map<String, bool>> genDisplayed = {};
 
 class Generation extends StatefulWidget {
+  final String contact;
   final String name;
   final String genValue;
 
-  Generation({super.key, required this.name, required this.genValue});
+  Generation({super.key, required this.contact, required this.name, required this.genValue});
 
   @override
   State<Generation> createState() => _GenerationState();
@@ -29,10 +26,10 @@ class _GenerationState extends State<Generation> {
 
   Widget getGenWidget() { // Returns either loading or generated string based on progress
     timer = Timer.periodic(Duration(seconds: 1), (Timer t) {
-      if (genMap[widget.genValue] != null && genDisplayed[widget.genValue] == false) {
+      if (genMap[widget.contact]![widget.genValue] != null && genDisplayed[widget.contact] != null && genDisplayed[widget.contact]![widget.genValue] == false) {
         runZonedGuarded(() => 
           setState(() {
-            genDisplayed[widget.genValue] = true;
+            genDisplayed[widget.contact]![widget.genValue] = true;
           }),
           (error, stacktrace) {
             safePrint("Failed to display generation.");
@@ -40,13 +37,13 @@ class _GenerationState extends State<Generation> {
         );
       }
     });
-    return Padding(padding: EdgeInsets.all(10), child: (genDisplayed[widget.genValue] == false || genMap[widget.genValue] == null) ? CircularProgressIndicator() : Text(genMap[widget.genValue]!, style: TextStyle(fontSize: 16)));
+    return Padding(padding: EdgeInsets.all(10), child: (genDisplayed[widget.contact] == null  || genDisplayed[widget.contact]![widget.genValue] == false || genMap[widget.contact]![widget.genValue] == null) ? CircularProgressIndicator() : Text(genMap[widget.contact]![widget.genValue], style: TextStyle(fontSize: 16)));
   }
 
   @override
   Widget build(BuildContext context) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Padding(padding: EdgeInsets.all(10), child: Text(widget.name, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),
+      Padding(padding: EdgeInsets.all(10), child: Text(widget.name, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black))),
       getGenWidget(),
     ]);
   }
