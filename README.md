@@ -13,3 +13,8 @@
 - next steps
 - any corrections to previous meeting
 - key questions
+
+## Data used to tailor generations:
+- Individual info
+- Group info
+- Which groups individuals are in
