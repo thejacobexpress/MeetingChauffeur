@@ -88,7 +88,7 @@ void initGenDisplayed() {
   }
 }
 
-Recipient? getRecipientByEmail(String email) {
+IndividualClass? getIndividualByEmail(String email) {
   for(final recipient in recipients) {
     if(recipient is IndividualClass && recipient.contact == email) {
       return recipient;
@@ -158,6 +158,33 @@ bool infolessRecipientExists() {
   return false;
 }
 
+bool infolessRecipientExistsOutsideGroup() {
+  for(final recipient in recipients) {
+    if(recipient is IndividualClass) {
+      if(recipient.info == "" && recipient.getGroups().isEmpty) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+String getMeetingTimeString(DateTime startTime, DateTime endTime) {
+  String startTimeString = "";
+  String endTimeString = "";
+  if(startTime.hour > 12) {
+    startTimeString = "${startTime.hour - 12}:${startTime.minute < 10 ? "0${startTime.minute.toString()}" : startTime.minute} PM";
+  } else {
+    startTimeString = "${startTime.hour}:${startTime.minute < 10 ? "0${startTime.minute.toString()}" : startTime.minute} AM";
+  }
+  if(endTime.hour > 12) {
+    endTimeString = "${endTime.hour - 12}:${endTime.minute < 10 ? "0${endTime.minute.toString()}" : endTime.minute} PM";
+  } else {
+    endTimeString = "${endTime.hour}:${endTime.minute < 10 ? "0${endTime.minute.toString()}" : endTime.minute} AM";
+  }
+  return "Meeting lasted from $startTimeString to $endTimeString";
+}
+
 Future<Map<String, dynamic>> uploadJsonToS3(String fileName, Map<String, dynamic> json) async {
 
   try {
@@ -199,19 +226,31 @@ Future<void> uploadTailorJson(Map<String, dynamic> json) async {
       Map<String, String> tailoredMap = {};
       for(final email in getEmails()) {
         for(final recipient in recipients) {
-          if(recipient is IndividualClass && recipient.contact == email) {
-            tailoredMap[email] = recipient.info ?? "";
+          if(recipient is IndividualClass && recipient.contact == email && !tailoredMap.containsKey(recipient.contact)) {
+            List<String> groupInfo = [];
+            for(final group in recipient.getGroups()) {
+              safePrint("Group that ${recipient.name} is in: ${group.name}");
+              groupInfo.add("${group.name}: ${group.info}");
+            }
+            String groupInfoString = recipient.getGroups().isEmpty ? "" : " This person is involved with these groups: ${recipient.getGroups().map((group) => group.name).join(", ")}. Details about each group this individual is involved in: ${groupInfo.join(", ")}.";
+            tailoredMap[email] = "${recipient.info}$groupInfoString";
             break;
           } else if (recipient is GroupClass) {
             for(final individual in recipient.individuals) {
-              if(individual.contact == email) {
-                tailoredMap[email] = individual.info ?? "";
+              if(individual.contact == email && !tailoredMap.containsKey(individual.contact)) {
+                List<String> groupInfo = [];
+                for(final group in individual.groupsList) {
+                  groupInfo.add("${group.name}: ${group.info}");
+                }
+                String groupInfoString = individual.getGroups().isEmpty ? "" : " This person is involved with these groups: ${individual.getGroups().map((group) => group.name).join(", ")}. Details about each group this individual is involved in: ${groupInfo.join(", ")}.";
+                tailoredMap[email] = "${recipient.info}$groupInfoString";
                 break;
               }
             }
           }
         }
       }
+      safePrint("Tailored Map: $tailoredMap");
       await uploadJsonToS3("recording${recordingFilePaths.length-1}_tailor", tailoredMap);
     }
   }
@@ -383,7 +422,7 @@ Future<String> downloadFileContent(String localDir, String serverDir, String typ
       return content;
 
     } on Exception catch(e) {
-      safePrint("File not generated yet: $serverDir - $e");
+      safePrint("File not generated yet.");
       await Future.delayed(Duration(seconds: 2));
       retries++;
       if(retries==10) {
@@ -536,7 +575,7 @@ Future<Map<String, Map<String, dynamic>>> retrieveDataFromS3AndLocal(Map<String,
         if((entry.key == GenerationType.DATE_TIME.value || entry.key == GenerationType.LOCATION.value) && canAddEntry) {
           switch(entry.key) {
             case ("date_time"):
-              genMap["General"]![entry.key] = "${startTime.month}/${startTime.day}/${startTime.year} - Meeting lasted from ${startTime.hour > 12 ? startTime.hour - 12 : startTime.hour}:${startTime.minute < 10 ? "0${startTime.minute.toString()}" : startTime.minute} to ${endTime.hour > 12 ? endTime.hour - 12 : endTime.hour}:${endTime.minute < 10 ? "0${endTime.minute.toString()}" : endTime.minute}";
+              genMap["General"]![entry.key] = "${startTime.month}/${startTime.day}/${startTime.year} - ${getMeetingTimeString(startTime, endTime)}";
             case ("location"):
               double lat = double.parse(locationData.toString().split(':')[1].substring(1).replaceAll(", long", ""));
               double long = double.parse(locationData.toString().split(':')[2].substring(1).replaceAll(">", ""));
@@ -564,7 +603,7 @@ Future<Map<String, Map<String, dynamic>>> retrieveDataFromS3AndLocal(Map<String,
 
         // Check if the recipient has info, if there is no info AND there was already general generations downloaded, then skip to the next recipient.
         try {
-          if(getRecipientByEmail(email)!.info == "" && downloadedGeneral) {
+          if(getIndividualByEmail(email)!.info == "" && getIndividualByEmail(email)!.getGroups().isEmpty && downloadedGeneral) {
             genMap[email] = genMap["General"]!;
             continue;
           }
@@ -702,7 +741,7 @@ Future<Map<String, Map<String, dynamic>>> retrieveDataFromS3AndLocal(Map<String,
                 if (iteration > 1) {
                   genMap[email]![type.value] = genMap["General"]![type.value];
                 } else {
-                 genMap[email]![type.value] = genMap["General"]![entry.key] = "${startTime.month}/${startTime.day}/${startTime.year} - Meeting lasted from ${startTime.hour > 12 ? startTime.hour - 12 : startTime.hour}:${startTime.minute < 10 ? "0${startTime.minute.toString()}" : startTime.minute} to ${endTime.hour > 12 ? endTime.hour - 12 : endTime.hour}:${endTime.minute < 10 ? "0${endTime.minute.toString()}" : endTime.minute}";
+                 genMap[email]![type.value] = genMap["General"]![entry.key] = "${startTime.month}/${startTime.day}/${startTime.year} - ${getMeetingTimeString(startTime, endTime)}";
                 }
               case ("location"):
                 if (iteration > 1) {

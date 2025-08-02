@@ -29,17 +29,21 @@ class _NewGroupPageState extends State<NewGroupPage> {
   GroupClass group = GroupClass("", []);
 
   TextEditingController nameController = TextEditingController();
+  TextEditingController infoController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     nameController = TextEditingController(text: group.name);
+    infoController = TextEditingController(text: group.info);
     nameController.addListener(() => group.name = nameController.text);
+    infoController.addListener(() => group.info = infoController.text);
   }
 
   @override
   void dispose() {
     nameController.dispose();
+    infoController.dispose();
     super.dispose();
   }
 
@@ -82,80 +86,100 @@ class _NewGroupPageState extends State<NewGroupPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Center(child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Padding(padding: EdgeInsets.fromLTRB(50, MediaQuery.paddingOf(context).top, 50, 20), child: 
-          TextField(
-            decoration: InputDecoration(
-              labelText: 'Group Name',
-              border: OutlineInputBorder(),
+    return Center(child: SizedBox( width: MediaQuery.of(context).size.width, height: MediaQuery.of(context).size.height,
+      child: ListView( scrollDirection: Axis.vertical, shrinkWrap: true,
+        children: [Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Padding(padding: EdgeInsets.fromLTRB(50, MediaQuery.paddingOf(context).top, 50, 0), child: 
+            TextField(
+              decoration: InputDecoration(
+                labelText: 'Group Name',
+                border: OutlineInputBorder(),
+              ),
+              controller: nameController,
+              style: TextStyle(fontSize: 20),
             ),
-            controller: nameController,
-            style: TextStyle(fontSize: 20),
           ),
-        ),
-        Padding(padding: EdgeInsets.fromLTRB(20, 0, 20, 10), child:
-          Text(
-            'Individuals',
-            style: TextStyle(fontSize: 20),
+          Padding(padding: EdgeInsets.fromLTRB(10, 20, 10, 0), child:
+            Text(
+              'Individuals',
+              style: TextStyle(fontSize: 20),
+            ),
           ),
-        ),
-        SizedBox(
-          height: 329,
-          width: MediaQuery.of(context).size.width,
-          child: ListView(
-            shrinkWrap: true,
-            scrollDirection: Axis.vertical,
-            children: getIndividualWidgets(),
-          )
-        ),
-        Padding(padding: EdgeInsets.fromLTRB(50, 10, 50, 0), child:
-          ElevatedButton(
-            onPressed: () => goToIndividualsPage(),
-            style: ButtonStyle(
-            backgroundColor: MaterialStateProperty.all<Color>(Colors.blue),
-            padding: MaterialStateProperty.all<EdgeInsets>(EdgeInsets.all(20)),
-            textStyle: MaterialStateProperty.all<TextStyle>(TextStyle(fontSize: 20)),
-            shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-              RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30.0),
+          SizedBox(
+            height: 329,
+            width: MediaQuery.of(context).size.width,
+            child: ListView(
+              shrinkWrap: true,
+              scrollDirection: Axis.vertical,
+              children: getIndividualWidgets(),
+            )
+          ),
+          Padding(padding: EdgeInsets.fromLTRB(10, 20, 10, 10), child:
+            Text(
+              'Info',
+              style: TextStyle(fontSize: 20),
+            ),
+          ),
+          Padding(padding: EdgeInsets.fromLTRB(16, 0, 16, 0), child:
+            TextField(
+              decoration: InputDecoration(
+                labelText: 'Info about the group (optional)',
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
               ),
-            )),
-            child: Center(child: Text("Add New Individual", style: TextStyle(color: Colors.white, fontSize: 20)))
+              maxLines: 5,
+              style: TextStyle(fontSize: 16),
+              controller: infoController,
+            ),
+          ),
+          Padding(padding: EdgeInsets.fromLTRB(50, 10, 50, 0), child:
+            ElevatedButton(
+              onPressed: () => goToIndividualsPage(),
+              style: ButtonStyle(
+              backgroundColor: MaterialStateProperty.all<Color>(Colors.blue),
+              padding: MaterialStateProperty.all<EdgeInsets>(EdgeInsets.all(20)),
+              textStyle: MaterialStateProperty.all<TextStyle>(TextStyle(fontSize: 20)),
+              shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30.0),
+                ),
+              )),
+              child: Center(child: Text("Add New Individual", style: TextStyle(color: Colors.white, fontSize: 20)))
+            )
+          ),
+          Padding(padding: EdgeInsets.fromLTRB(75, 10, 75, 0), child:
+            ElevatedButton(
+              onPressed: () => addNewGroup(),
+              style: ButtonStyle(
+              backgroundColor: MaterialStateProperty.all<Color>(Colors.blue),
+              padding: MaterialStateProperty.all<EdgeInsets>(EdgeInsets.all(20)),
+              textStyle: MaterialStateProperty.all<TextStyle>(TextStyle(fontSize: 20)),
+              shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30.0),
+                ),
+              )),
+              child: Center(child: Text("Add Group", style: TextStyle(color: Colors.white, fontSize: 20)))
+            )
+          ),
+          Padding(padding: EdgeInsets.fromLTRB(100, 10, 100, 10), child:
+            ElevatedButton(
+              onPressed: () => goBack(),
+              style: ButtonStyle(
+              backgroundColor: MaterialStateProperty.all<Color>(Colors.blue),
+              padding: MaterialStateProperty.all<EdgeInsets>(EdgeInsets.all(20)),
+              textStyle: MaterialStateProperty.all<TextStyle>(TextStyle(fontSize: 20)),
+              shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30.0),
+                ),
+              )),
+              child: Center(child: Text("Back", style: TextStyle(color: Colors.white, fontSize: 20)))
+            )
           )
-        ),
-        Padding(padding: EdgeInsets.fromLTRB(100, 10, 100, 0), child:
-          ElevatedButton(
-            onPressed: () => addNewGroup(),
-            style: ButtonStyle(
-            backgroundColor: MaterialStateProperty.all<Color>(Colors.blue),
-            padding: MaterialStateProperty.all<EdgeInsets>(EdgeInsets.all(20)),
-            textStyle: MaterialStateProperty.all<TextStyle>(TextStyle(fontSize: 20)),
-            shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-              RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30.0),
-              ),
-            )),
-            child: Center(child: Text("Add Group", style: TextStyle(color: Colors.white, fontSize: 20)))
-          )
-        ),
-        Padding(padding: EdgeInsets.fromLTRB(100, 10, 100, 10), child:
-          ElevatedButton(
-            onPressed: () => goBack(),
-            style: ButtonStyle(
-            backgroundColor: MaterialStateProperty.all<Color>(Colors.blue),
-            padding: MaterialStateProperty.all<EdgeInsets>(EdgeInsets.all(20)),
-            textStyle: MaterialStateProperty.all<TextStyle>(TextStyle(fontSize: 20)),
-            shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-              RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30.0),
-              ),
-            )),
-            child: Center(child: Text("Back", style: TextStyle(color: Colors.white, fontSize: 20)))
-          )
-        )
-      ],
-    ));
+        ],
+    )])));
   }
 }

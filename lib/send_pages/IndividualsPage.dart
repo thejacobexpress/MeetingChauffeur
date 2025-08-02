@@ -1,3 +1,4 @@
+import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:meeting_summarizer_app/classes/GroupClass.dart';
 import 'package:meeting_summarizer_app/send_pages/NewIndividualPage.dart';

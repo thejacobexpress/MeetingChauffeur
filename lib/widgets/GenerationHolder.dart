@@ -1,6 +1,7 @@
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:meeting_summarizer_app/backendCalls.dart';
+import 'package:meeting_summarizer_app/classes/Recipient.dart';
 import 'package:meeting_summarizer_app/widgets/Generation.dart';
 import 'dart:async';
 
@@ -21,8 +22,9 @@ class GenerationHolder extends StatefulWidget {
   final String name;
   final String contact;
   final Map<String, Map<String, dynamic>> genMap;
+  final Map<String, dynamic> json;
 
-  GenerationHolder({super.key, required this.name, required this.contact, required this.genMap});
+  GenerationHolder({super.key, required this.name, required this.contact, required this.genMap, required this.json});
 
   @override
   State<GenerationHolder> createState() => _GenerationHolderState();
@@ -51,7 +53,7 @@ class _GenerationHolderState extends State<GenerationHolder> {
           }
         } else if(widget.contact == "General" && widget.genMap[widget.contact] != null) {
           for(final entry in widget.genMap[widget.contact]!.entries) {
-            if(nonTailorableStrings.contains(entry.key)) {
+            if(nonTailorableStrings.contains(entry.key) || !widget.json['tailored'] || infolessRecipientExistsOutsideGroup()) {
               widge.add(Generation(contact: widget.contact, name: getCapitalizedName(entry.key.replaceAll("_", " ")), genValue: entry.key));
             }
           }

@@ -55,10 +55,10 @@ class _IndividualState extends State<Individual> {
             isSelected = !isSelected;
             if(isSelected) {
               recipients.add(widget.indivClass);
-              safePrint("recipients: $recipients");
+              safePrint("New Recipient: ${widget.indivClass.contact}");
             } else {
               recipients.remove(widget.indivClass);
-              safePrint("recipients: $recipients");
+              safePrint("Removed Recipient: ${widget.indivClass.contact}");
             }
           } else if (widget.newGroup != noGroup) {
             indivToAdd = widget.indivClass;

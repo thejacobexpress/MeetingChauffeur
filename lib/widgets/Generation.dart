@@ -26,16 +26,19 @@ class _GenerationState extends State<Generation> {
 
   Widget getGenWidget() { // Returns either loading or generated string based on progress
     timer = Timer.periodic(Duration(seconds: 1), (Timer t) {
-      if (genMap[widget.contact]![widget.genValue] != null && genDisplayed[widget.contact] != null && genDisplayed[widget.contact]![widget.genValue] == false) {
-        runZonedGuarded(() => 
+      runZonedGuarded(() => {
+        if (genMap[widget.contact]![widget.genValue] != null && genDisplayed[widget.contact] != null && genDisplayed[widget.contact]![widget.genValue] == false) {
           setState(() {
             genDisplayed[widget.contact]![widget.genValue] = true;
-          }),
-          (error, stacktrace) {
-            safePrint("Failed to display generation.");
-          }
-        );
-      }
+          })
+        }
+      }, (error, stacktrace) {
+        if(error is TypeError) {
+
+        } else {
+          safePrint("Failed to display generation");
+        }
+      });
     });
     return Padding(padding: EdgeInsets.all(10), child: (genDisplayed[widget.contact] == null  || genDisplayed[widget.contact]![widget.genValue] == false || genMap[widget.contact]![widget.genValue] == null) ? CircularProgressIndicator() : Text(genMap[widget.contact]![widget.genValue], style: TextStyle(fontSize: 16)));
   }

@@ -67,18 +67,19 @@ class _FinalizeSendPageState extends State<FinalizeSendPage> {
   List<GenerationHolder> getGenerations() {
     // Add a general generation holder if the user requested any general generations.
     List<GenerationHolder> widgetList = [];
-    widgetList.clear();
     if(getRequestedGeneralGenTypes().isNotEmpty) {
-      widgetList.add(GenerationHolder(name: "General", contact: "General", genMap: genMap,));
+      widgetList.add(GenerationHolder(name: "General", contact: "General", genMap: genMap, json: widget.json,));
     }
     // Add a generation holder for each recipient with their tailored generations.
-    for(final recipient in recipients) {
-      if(recipient is GroupClass && recipient.individuals.isNotEmpty) {
-        for(final individual in recipient.individuals) {
-          widgetList.add(GenerationHolder(name: individual.name, contact: individual.contact, genMap: genMap,));
+    if(widget.json['tailored'] != null && widget.json['tailored']) {
+      for(final recipient in recipients) {
+        if(recipient is GroupClass && recipient.individuals.isNotEmpty) {
+          for(final individual in recipient.individuals) {
+            widgetList.add(GenerationHolder(name: individual.name, contact: individual.contact, genMap: genMap, json: widget.json,));
+          }
+        } else if (recipient is IndividualClass && (recipient.info != '' || recipient.getGroups().isNotEmpty)) {
+          widgetList.add(GenerationHolder(name: recipient.name, contact: recipient.contact, genMap: genMap, json: widget.json,));
         }
-      } else if (recipient is IndividualClass && recipient.info != '') {
-        widgetList.add(GenerationHolder(name: recipient.name, contact: recipient.contact, genMap: genMap,));
       }
     }
     return widgetList;
