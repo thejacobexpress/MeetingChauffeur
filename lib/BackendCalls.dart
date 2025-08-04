@@ -26,6 +26,7 @@ import 'package:dio/dio.dart';
 
 import 'package:geocoding/geocoding.dart';
 
+/// The GenerationType enum defines the types of generations that can be created from a meeting recording.
 enum GenerationType {
   DATE_TIME('date_time', "Date and Time"), // Not dealt with on server end
   LOCATION('location', "Location"), // Not dealt with on server end
@@ -47,6 +48,7 @@ enum GenerationType {
   final String value;
 }
 
+/// Keeps track of the generation types that cannot be tailored to recipients.
 List<GenerationType> nonTailorable = [
   GenerationType.DATE_TIME,
   GenerationType.LOCATION,
@@ -55,6 +57,7 @@ List<GenerationType> nonTailorable = [
   GenerationType.PURPOSE
 ];
 
+/// Keeps track of the generation types, in their string form, that can be tailored to recipients.
 List<String> nonTailorableStrings = [
   GenerationType.DATE_TIME.value,
   GenerationType.LOCATION.value,
@@ -66,13 +69,16 @@ List<String> nonTailorableStrings = [
 String bucket = "meetingsummarizerapp3e62d7c6d4654f17bc7d042793aca958-dev";
 String region = "us-west-2";
 
-// Map of contacts as keys and their generation names as values surrounding a map with values of the generations.
+/// Map of contacts as keys that have values of maps that contain their generation names as keys with its values being the generations themselves.
+/// This map is used to keep track of which generations are required for each recipient.
 Map<String, Map<String, dynamic>> genMap = {};
 
 bool genListReady = false;
 
+/// List of emails that are used to keep track of the recipients' emails, directly matching the recipients list.
 List<String> emails = [];
 
+/// Initiates the genDisplayed map, which is used to keep track of which generation types are displayed in the UI.
 void initGenDisplayed() {
   genDisplayed.clear();
   for(final entry in genMap.entries) {
@@ -88,6 +94,7 @@ void initGenDisplayed() {
   }
 }
 
+/// Returns the instance of IndividualClass that matches the provided email.
 IndividualClass? getIndividualByEmail(String email) {
   for(final recipient in recipients) {
     if(recipient is IndividualClass && recipient.contact == email) {
@@ -103,6 +110,7 @@ IndividualClass? getIndividualByEmail(String email) {
   return null;
 }
 
+/// Returns a list of emails from the recipients list.
 List<String> getEmails() {
   emails = [];
   for(final recipient in recipients) {
@@ -117,6 +125,7 @@ List<String> getEmails() {
   return emails;
 }
 
+/// Removes special characters from the input string, specifically used to remove "." and "@" from emails.
 String removeSpecialChars(String input) {
   String newText = "";
   for(final char in input.split("")) {
@@ -127,6 +136,7 @@ String removeSpecialChars(String input) {
   return newText;
 }
 
+/// Returns the address of the location based on the latitude and longitude provided.
 Future<String> getAddress(double lat, double long) async {
   String address;
   try {
@@ -143,6 +153,7 @@ Future<String> getAddress(double lat, double long) async {
   return address;
 }
 
+/// Checks if there are any recipients that do not have info.
 bool infolessRecipientExists() {
   for(final recipient in recipients) {
     if(recipient is IndividualClass && (recipient.info == null || recipient.info == "")) {
@@ -158,6 +169,7 @@ bool infolessRecipientExists() {
   return false;
 }
 
+/// Checks if there are any recipients that do not have info and are not part of a group.
 bool infolessRecipientExistsOutsideGroup() {
   for(final recipient in recipients) {
     if(recipient is IndividualClass) {
@@ -169,6 +181,7 @@ bool infolessRecipientExistsOutsideGroup() {
   return false;
 }
 
+/// Returns a string representation of the meeting time using the start time and end time of the meeting, formatted as "Meeting lasted from HH:MM AM/PM to HH:MM AM/PM".
 String getMeetingTimeString(DateTime startTime, DateTime endTime) {
   String startTimeString = "";
   String endTimeString = "";
@@ -185,6 +198,7 @@ String getMeetingTimeString(DateTime startTime, DateTime endTime) {
   return "Meeting lasted from $startTimeString to $endTimeString";
 }
 
+/// Uploads a JSON file to S3 with the specified file name and JSON content.
 Future<Map<String, dynamic>> uploadJsonToS3(String fileName, Map<String, dynamic> json) async {
 
   try {
@@ -216,6 +230,7 @@ Future<Map<String, dynamic>> uploadJsonToS3(String fileName, Map<String, dynamic
     return json;
 }
 
+/// Uploads a tailored JSON file to an AWS S3 bucket that contains recipients' emails and the info that corresponds to that recipient, including IndividualClass info, associated groups' GroupClass info, and simply the groups that the individual is associated with. Function only uploads JSON if the 'tailored' key is present in the JSON passed in and set to true.
 Future<void> uploadTailorJson(Map<String, dynamic> json) async {
   //Deterine if user wants generations to be tailored to recipients using the 'tailored' key in the json,
   // if so, then add the recipients' info to a new json object that will be sent to the API Gateway.
@@ -239,11 +254,11 @@ Future<void> uploadTailorJson(Map<String, dynamic> json) async {
             for(final individual in recipient.individuals) {
               if(individual.contact == email && !tailoredMap.containsKey(individual.contact)) {
                 List<String> groupInfo = [];
-                for(final group in individual.groupsList) {
+                for(final group in individual.getGroups()) {
                   groupInfo.add("${group.name}: ${group.info}");
                 }
                 String groupInfoString = individual.getGroups().isEmpty ? "" : " This person is involved with these groups: ${individual.getGroups().map((group) => group.name).join(", ")}. Details about each group this individual is involved in: ${groupInfo.join(", ")}.";
-                tailoredMap[email] = "${recipient.info}$groupInfoString";
+                tailoredMap[email] = "${individual.info}$groupInfoString";
                 break;
               }
             }
@@ -256,6 +271,7 @@ Future<void> uploadTailorJson(Map<String, dynamic> json) async {
   }
 }
 
+/// Generates a pre-signed PUT URL for uploading a file to S3 with the specified file name.
 Future<String> generatePresignedPutUrl (String fileName) async {
 
   final key = "public/recordings/$fileName";
@@ -286,6 +302,9 @@ Future<String> generatePresignedPutUrl (String fileName) async {
   return signedRequest.toString();
 }
 
+/// Uploads the WAV file specified by the given path to an AWS S3 bucket, triggering a lambda function to process the file and generate the requested generations based on the provided JSON specifications. If no path is provided, it prompts the user to select a WAV file.
+/// 
+/// The function also uploads a tailored JSON file using ```uploadTailorJson``` function and uploads a JSON file containing user-selected generation specifications using ```uploadJsonToS3``` function.
 void uploadWAVtoS3(String path, Map<String, dynamic> json) async {
 
   // Upload the tailor json to S3 if the user has selected the tailored option.
@@ -370,6 +389,7 @@ void uploadWAVtoS3(String path, Map<String, dynamic> json) async {
     }
 }
 
+/// Downloads the file content from the AWS S3 location given to the given local directory, deletes the file from S3 after retrieval, and returns the content of the file as a string.
 Future<String> downloadFileContent(String localDir, String serverDir, String type) async {
   int retries = 0;
   while(retries < 10) {
@@ -433,6 +453,9 @@ Future<String> downloadFileContent(String localDir, String serverDir, String typ
   return "";
 }
 
+/// Retrieves generation data from S3 and local device storage based on the provided [json] specifications ([json] stores desired generations), downloading the necessary files and storing them in ```genMap``` for each recipient. It also handles general generations that are not tailored to recipients by storing them in ```genMap["General"]```.
+/// 
+/// Returns ```genMap```.
 Future<Map<String, Map<String, dynamic>>> retrieveDataFromS3AndLocal(Map<String, dynamic> json) async {
   final appDocDir = await getApplicationDocumentsDirectory();
   var localParentDir;
@@ -787,7 +810,9 @@ Future<Map<String, Map<String, dynamic>>> retrieveDataFromS3AndLocal(Map<String,
 
 }
 
-// Returns status code
+/// Sends an email with the provided [content], which should only be ```genMap```, to the recipients using the MeetingSummarizerAPI.
+/// 
+/// Returns the status code of the response; a successful email send will return 200.
 Future<int> sendEmail(Map<String, Map<String, dynamic>> content) async {
   final res = Amplify.API.post(
     "/sendEmails",

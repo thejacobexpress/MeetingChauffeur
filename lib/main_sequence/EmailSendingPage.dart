@@ -41,6 +41,7 @@ class _EmailSendingPageState extends State<EmailSendingPage> {
         setState(() {
           load = false;
         });
+        safePrint("Email sent successfully!");
         await Future.delayed(Duration(seconds: 1));
         setState(() {
           Navigator.of(context).popUntil((route) {

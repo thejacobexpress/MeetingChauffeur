@@ -1,9 +1,8 @@
+import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:meeting_summarizer_app/classes/GroupClass.dart';
 import 'package:meeting_summarizer_app/send_pages/SingleGroupPage.dart';
 import 'package:meeting_summarizer_app/classes/Recipient.dart';
-
-var isSelected = false;
 
 class Group extends StatefulWidget {
   final GroupClass groupClass;
@@ -19,6 +18,8 @@ class Group extends StatefulWidget {
 }
 
 class _GroupState extends State<Group> {
+
+  var isSelected = false;
 
   void goToGroupPage(GroupClass group) {
     setState(() {
@@ -77,8 +78,10 @@ class _GroupState extends State<Group> {
           isSelected = !isSelected;
           if(isSelected) {
               recipients.add(widget.groupClass);
+              safePrint("Added ${widget.groupClass.name} to recipients: ${recipients}");
             } else {
-              recipients.remove(widget.groupClass);
+              recipients.remove(widget.groupClass);(
+              "Removed ${widget.groupClass.name} from recipients: ${recipients}");
             }
         } else {
           goToGroupPage(widget.groupClass);
