@@ -1,18 +1,27 @@
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:meeting_summarizer_app/classes/GroupClass.dart';
-import 'package:meeting_summarizer_app/main_sequence/AddRecipientsPage.dart';
-import 'package:meeting_summarizer_app/send_pages/NewGroupPage.dart';
-import 'package:meeting_summarizer_app/send_pages/SingleGroupPage.dart';
 import 'package:meeting_summarizer_app/send_pages/SingleIndividualPage.dart';
 import 'package:meeting_summarizer_app/classes/IndividualClass.dart';
 import 'package:meeting_summarizer_app/classes/Recipient.dart';
 
 class Individual extends StatefulWidget {
+
+  /// The ```IndividualClass``` instance that this widget represents.
   final IndividualClass indivClass;
+
+  /// The color of the individual, which is used to display the individual in the UI.
   final Color individualColor;
+
+  /// If true, the individual can be selected by the user; if false, it is not selectable.
   final bool checkable;
-  final GroupClass newGroup; // Group that this individual will be added to (if user is adding this individual to a new group)
+
+  /// If the user is adding this individual to a new group, this is the group that the individual will be added to.
+  final GroupClass newGroup;
+
+  /// Passed to call ```setState``` on the parent widget to the update parent widget's UI after adding an ```IndividualClass``` to ```individuals```.
+  /// 
+  /// Called when this widget is pressed and [checkable] is false.
   final Function addToIndividuals;
 
   const Individual({super.key, required this.indivClass, required this.individualColor, required this.checkable, required this.newGroup, required this.addToIndividuals});
@@ -39,6 +48,7 @@ class _IndividualState extends State<Individual> {
     });
   }
 
+  /// Returns a ```CheckBox``` widget if [checkable] is true and false otherwise.
   Widget getCheckboxWidget() {
     if(widget.checkable) {
       return Checkbox(value: isSelected, onChanged: (value) => setState(() {isSelected = value!;}));

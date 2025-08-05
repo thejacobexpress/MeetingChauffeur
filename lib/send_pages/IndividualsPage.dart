@@ -1,4 +1,3 @@
-import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:meeting_summarizer_app/classes/GroupClass.dart';
 import 'package:meeting_summarizer_app/send_pages/NewIndividualPage.dart';
@@ -34,6 +33,7 @@ class _IndividualsPageState extends State<IndividualsPage> {
     });
   }
 
+  /// Returns a list of ```Individual``` widgets that represent the recipients in the ```individuals``` list.
   List<Widget> getIndividualWidgets() {
     List<Widget> list = [];
     for(final individual in individuals) {
@@ -54,6 +54,8 @@ class _IndividualsPageState extends State<IndividualsPage> {
     });
   }
 
+  /// If the user is not choosing a group (```widget.group == noGroup```), then the button "Add New Individual" will be shown.
+  /// Otherwise, it will not be shown.
   Widget getAddWidget() {
     if(widget.group == noGroup) {
       return Padding(padding: EdgeInsets.fromLTRB(30, 20, 30, 10), child: 

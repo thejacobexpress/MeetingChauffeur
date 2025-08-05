@@ -1,9 +1,5 @@
-import 'dart:math';
-
-import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart';
 import 'package:meeting_summarizer_app/BackendCalls.dart';
 import 'dart:async';
 
@@ -11,8 +7,14 @@ import 'dart:async';
 Map<String, Map<String, bool>> genDisplayed = {};
 
 class Generation extends StatefulWidget {
+
+  /// The contact to which the generation belongs.
   final String contact;
+
+  /// The name of the generation, which is displayed above the ```genValue```.
   final String name;
+
+  /// The generated value of the generation, which is the text that is displayed below ```name```.
   final String genValue;
 
   Generation({super.key, required this.contact, required this.name, required this.genValue});
@@ -24,7 +26,8 @@ class Generation extends StatefulWidget {
 class _GenerationState extends State<Generation> {
   Timer? timer;
 
-  Widget getGenWidget() { // Returns either loading or generated string based on progress
+  /// Returns either a ```CircularProgressIndicator``` widget if the generation within ```genMap``` is not yet available or a ```Text``` widget that contains the generation within ```genMap``` if it is available.
+  Widget getGenWidget() {
     timer = Timer.periodic(Duration(seconds: 1), (Timer t) {
       runZonedGuarded(() => {
         if (genMap[widget.contact]![widget.genValue] != null && genDisplayed[widget.contact] != null && genDisplayed[widget.contact]![widget.genValue] == false) {

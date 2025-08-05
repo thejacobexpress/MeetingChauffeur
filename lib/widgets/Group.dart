@@ -5,8 +5,14 @@ import 'package:meeting_summarizer_app/send_pages/SingleGroupPage.dart';
 import 'package:meeting_summarizer_app/classes/Recipient.dart';
 
 class Group extends StatefulWidget {
+
+  /// The ```GroupClass``` instance that this widget represents.
   final GroupClass groupClass;
+
+  /// The color of the group, which is used to display the group in the UI.
   final Color groupColor;
+
+  /// If true, the group can be selected by the user; if false, it is not selectable.
   final bool checkable;
 
   const Group({super.key, required this.groupClass, required this.groupColor, required this.checkable});

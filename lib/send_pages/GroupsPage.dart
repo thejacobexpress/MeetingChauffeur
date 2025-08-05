@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:meeting_summarizer_app/classes/GroupClass.dart';
 import 'package:meeting_summarizer_app/send_pages/NewGroupPage.dart';
-import 'package:meeting_summarizer_app/send_pages/NewIndividualPage.dart';
-import 'package:meeting_summarizer_app/send_pages/SingleGroupPage.dart';
 import 'package:meeting_summarizer_app/widgets/Group.dart';
-import 'package:meeting_summarizer_app/widgets/Individual.dart';
-import 'package:meeting_summarizer_app/classes/IndividualClass.dart';
 
 class GroupsPage extends StatefulWidget {
   const GroupsPage({super.key});
@@ -33,6 +29,7 @@ class _GroupsPageState extends State<GroupsPage> {
     });
   }
 
+  /// Returns a list of ```Group``` widgets that represent the groups in the ```groups``` list.
   List<Widget> getGroupWidgets() {
     List<Widget> list = [];
     for(final group in groups) {

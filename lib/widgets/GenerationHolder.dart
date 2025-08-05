@@ -1,12 +1,11 @@
-import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:meeting_summarizer_app/backendCalls.dart';
-import 'package:meeting_summarizer_app/classes/Recipient.dart';
 import 'package:meeting_summarizer_app/widgets/Generation.dart';
 import 'dart:async';
 
 Map<String, bool> displayedHolders = {};
 
+/// Initializes the ```displayedHolders``` map with all emails as keys and false as values.
 initDisplayedHolders() {
   for(final email in getEmails()) {
     displayedHolders[email] = false;
@@ -14,14 +13,23 @@ initDisplayedHolders() {
   displayedHolders["General"] = false; // General is the holder for generations that are not tailored to any specific recipient.
 }
 
+/// Returns the [name] string with the first letter of each word capitalized.
 String getCapitalizedName(String name) {
   return name.split(" ").map((word) => word[0].toUpperCase() + word.substring(1).toLowerCase()).join(" ");
 }
 
 class GenerationHolder extends StatefulWidget {
+
+  /// The name of the generation holder, typically the recipient's name or "General".
   final String name;
+
+  /// The contact email of the recipient or "General".
   final String contact;
+
+  /// The ```genMap``` present in other places in the app, just passed here for convenience.
   final Map<String, Map<String, dynamic>> genMap;
+
+  /// The JSON object containing information about the desired generations, present in the ```AddGenerationsPage.dart``` page.
   final Map<String, dynamic> json;
 
   GenerationHolder({super.key, required this.name, required this.contact, required this.genMap, required this.json});
@@ -32,14 +40,14 @@ class GenerationHolder extends StatefulWidget {
 
 class _GenerationHolderState extends State<GenerationHolder> {
 
+  /// Returns an ```IconData``` based on whether the holder is expanded or not.
   IconData getDropdownIcon() {
     return displayedHolders[widget.contact]! ? Icons.arrow_drop_down : Icons.arrow_drop_up;
   }
 
   Timer? timer;
 
-  // Specific recipients only contain generations that are specifically tailored to them.
-  // "General" contain generations that are not tailored to any specific recipient. (in nonTailorable list at BackendCalls.dart: 50)
+  /// Using ```genMap```, Returns a widget list of type ```Generation``` that each contain a generation type to be generated for a specific recipient or "General".
   List<Widget> getGenWidgets() {
     List<Widget> widgets = [];
     if(displayedHolders[widget.contact]!) {

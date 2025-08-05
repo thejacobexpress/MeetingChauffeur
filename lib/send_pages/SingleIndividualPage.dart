@@ -1,7 +1,5 @@
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
-
-import 'package:meeting_summarizer_app/backendCalls.dart';
 import 'package:meeting_summarizer_app/classes/IndividualClass.dart';
 
 class SingleIndividualPage extends StatefulWidget {

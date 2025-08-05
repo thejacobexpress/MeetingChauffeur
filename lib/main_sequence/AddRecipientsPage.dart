@@ -1,13 +1,11 @@
 import 'dart:ui';
 import 'dart:math';
-
-import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:meeting_summarizer_app/classes/IndividualClass.dart';
 import 'package:meeting_summarizer_app/classes/Recipient.dart';
+import 'package:meeting_summarizer_app/main_sequence/AddSubjectPage.dart';
 import 'package:meeting_summarizer_app/widgets/Group.dart';
 import 'package:meeting_summarizer_app/widgets/Individual.dart';
-import 'package:meeting_summarizer_app/main_sequence/AddGenerationsPage.dart';
 import 'package:meeting_summarizer_app/classes/GroupClass.dart';
 
 class AddRecipientsPage extends StatefulWidget {
@@ -37,10 +35,12 @@ class _AddRecipientsPageState extends State<AddRecipientsPage> {
     return color;
   }
 
-  void goToGenerationsPage() {
-    setState(() {
-      Navigator.of(context).push(MaterialPageRoute(builder: (context) => AddGenerationsPage()));
-    });
+  void goToAddSubjectPage() {
+    if(recipients.isNotEmpty) {
+      setState(() {
+        Navigator.of(context).push(MaterialPageRoute(builder: (context) => AddSubjectPage()));
+      });
+    }
   }
 
   void goBack() {
@@ -104,7 +104,7 @@ class _AddRecipientsPageState extends State<AddRecipientsPage> {
               width: 250,
               height: 75,
               child: ElevatedButton(
-                onPressed: () => goToGenerationsPage(), // Assumes that the last WAV is the current WAV
+                onPressed: () => goToAddSubjectPage(), // Assumes that the last m4a is the current m4a
                 style: ButtonStyle(
                 backgroundColor: MaterialStateProperty.all<Color>(Colors.blue),
                 padding: MaterialStateProperty.all<EdgeInsets>(EdgeInsets.all(20)),
@@ -114,7 +114,7 @@ class _AddRecipientsPageState extends State<AddRecipientsPage> {
                     borderRadius: BorderRadius.circular(30.0),
                   ),
                 )),
-                child: Center(child: Text("Tweak Send", style: TextStyle(color: Colors.white, fontSize: 20)))
+                child: Center(child: Text("Next", style: TextStyle(color: Colors.white, fontSize: 20)))
               ),
             )
           ),

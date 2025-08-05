@@ -1,11 +1,7 @@
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
-import 'package:meeting_summarizer_app/main_sequence/AddRecipientsPage.dart';
 import 'package:meeting_summarizer_app/send_pages/GroupsIndividualsPage.dart';
-
 import 'main_sequence/HomePage.dart';
-import 'package:meeting_summarizer_app/send_pages/SendPage.dart';
-
 import 'package:amplify_api/amplify_api.dart';
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:amplify_storage_s3/amplify_storage_s3.dart';

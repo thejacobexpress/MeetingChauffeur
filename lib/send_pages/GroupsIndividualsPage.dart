@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-
-import 'package:meeting_summarizer_app/backendCalls.dart';
 import 'package:meeting_summarizer_app/classes/GroupClass.dart';
 import 'package:meeting_summarizer_app/send_pages/IndividualsPage.dart';
 import 'package:meeting_summarizer_app/send_pages/GroupsPage.dart';

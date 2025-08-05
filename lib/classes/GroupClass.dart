@@ -1,6 +1,5 @@
 import 'package:meeting_summarizer_app/classes/IndividualClass.dart';
 import 'package:meeting_summarizer_app/classes/Recipient.dart';
-import 'package:meeting_summarizer_app/widgets/Group.dart';
 
 /// Contains all of the ```GroupClass``` instances that exist.
 List<GroupClass> groups = [

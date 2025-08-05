@@ -221,7 +221,7 @@ packages:
     dependency: transitive
     description:
       name: crclib
-      sha256: "800f2226cd90c900ddcaaccb79449eabe690627ee8c7046737458f1a2509043d"
+      sha256: "800f2226cd90c900ddcm4acb79449eabe690627ee8c7046737458f1a2509043d"
       url: "https://pub.dev"
     source: hosted
     version: "3.0.0"

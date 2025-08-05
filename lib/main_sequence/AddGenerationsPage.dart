@@ -1,4 +1,3 @@
-import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:meeting_summarizer_app/main_sequence/FinalizeSendPage.dart';
 import 'package:meeting_summarizer_app/widgets/GenerationHolder.dart';
@@ -24,6 +23,9 @@ class AddGenerationsPage extends StatefulWidget {
 
 class _AddGenerationsPageState extends State<AddGenerationsPage> {
 
+  /// A map that contains the generation types and their boolean values.
+  /// 
+  /// The keys are the generation type names, and the values are booleans indicating whether that generation type is selected and therefore will be generated.
   final Map<String, dynamic> json = {
     GenerationType.DATE_TIME.value : true,
     GenerationType.LOCATION.value: false,
@@ -90,10 +92,10 @@ class _AddGenerationsPageState extends State<AddGenerationsPage> {
                 onPressed: () => {
                   genListReady = false,
                   genMap.clear(),
-                  uploadWAVtoS3(recordingFilePaths.last, json),
+                  uploadM4aToS3(recordingFilePaths.last, json),
                   initDisplayedHolders(),
                   goToFinalizeSendPage()
-                }, // Assumes that the last WAV is the current WAV
+                }, // Assumes that the last m4a in recordingFilePaths is the current m4a
                 style: ButtonStyle(
                 backgroundColor: MaterialStateProperty.all<Color>(Colors.blue),
                 padding: MaterialStateProperty.all<EdgeInsets>(EdgeInsets.all(20)),

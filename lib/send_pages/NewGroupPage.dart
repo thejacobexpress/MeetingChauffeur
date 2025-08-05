@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
-
-import 'package:meeting_summarizer_app/backendCalls.dart';
 import 'package:meeting_summarizer_app/classes/GroupClass.dart';
-import 'package:meeting_summarizer_app/classes/IndividualClass.dart';
 import 'package:meeting_summarizer_app/send_pages/IndividualsPage.dart';
 import 'package:meeting_summarizer_app/widgets/Individual.dart';
 
@@ -26,6 +23,7 @@ class NewGroupPage extends StatefulWidget {
 
 class _NewGroupPageState extends State<NewGroupPage> {
 
+  /// The ```GroupClass``` instance to be added to the ```groups``` list.
   GroupClass group = GroupClass("", []);
 
   TextEditingController nameController = TextEditingController();
@@ -76,6 +74,7 @@ class _NewGroupPageState extends State<NewGroupPage> {
     });
   }
 
+  /// Returns a list of ```Individual``` widgets representing the individuals in the group.
   List<Widget> getIndividualWidgets() {
     List<Widget> list = [];
     for(final individual in group.individuals) {

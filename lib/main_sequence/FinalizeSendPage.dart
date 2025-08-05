@@ -1,14 +1,9 @@
-import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart';
 import 'package:meeting_summarizer_app/BackendCalls.dart';
 import 'package:meeting_summarizer_app/classes/GroupClass.dart';
-import 'package:meeting_summarizer_app/main_sequence/AddRecipientsPage.dart';
 import 'package:meeting_summarizer_app/main_sequence/EmailSendingPage.dart';
-import 'package:meeting_summarizer_app/widgets/Generation.dart';
 import 'package:meeting_summarizer_app/classes/Recipient.dart';
 import 'package:meeting_summarizer_app/widgets/GenerationHolder.dart';
-import 'package:record/record.dart';
 import 'package:meeting_summarizer_app/classes/IndividualClass.dart';
 import 'dart:async';
 
@@ -18,15 +13,6 @@ class FinalizeSendPage extends StatefulWidget {
   final Map<String, dynamic> json;
 
   const FinalizeSendPage({super.key, required this.json});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
 
   @override
   State<FinalizeSendPage> createState() => _FinalizeSendPageState();
@@ -50,11 +36,11 @@ class _FinalizeSendPageState extends State<FinalizeSendPage> {
     });
   }
 
-  // Gets the list of generation types that the user requested that cannot be tailored to specific recipients.
+  /// Returns a list of string values of ```GenerationType```s that the user requested to be generated that cannot be tailored to specific recipients.
   List<String> getRequestedGeneralGenTypes() {
     List<String> generalGenTypes = [];
     for(final type in widget.json.entries) {
-      if(type.value == true && nonTailorableStrings.contains(type.key)) {
+      if(type.value && nonTailorableStrings.contains(type.key)) {
         generalGenTypes.add(type.key);
       }
     }
@@ -63,7 +49,7 @@ class _FinalizeSendPageState extends State<FinalizeSendPage> {
 
   Timer? timer;
 
-  // Get a list of widgets(shows text generations) that reflect what the user chose to generate in previous page.
+  /// Returns a list of type ```Widget```(shows text generations) that reflect what the user chose to generate in the ```AddGenerationsPage.dart``` page.
   List<GenerationHolder> getGenerations() {
     // Add a general generation holder if the user requested any general generations.
     List<GenerationHolder> widgetList = [];
@@ -85,6 +71,7 @@ class _FinalizeSendPageState extends State<FinalizeSendPage> {
     return widgetList;
   }
 
+  /// Makes use of the ```RetrieveDataFromS3AndLocal``` function to retrieve the data from S3 and local storage after waiting 3 seconds for the generations to be created.
   Future<void> retrieveData(Map<String, dynamic> json) async {
     await Future.delayed(Duration(seconds: 3));
     final result = await retrieveDataFromS3AndLocal(json);
@@ -121,12 +108,16 @@ class _FinalizeSendPageState extends State<FinalizeSendPage> {
               width: 250,
               height: 75,
               child: ElevatedButton(
-                onPressed: () => {
+                onPressed: () {
                   if(genListReady && recipients.isNotEmpty) {
-                    response = getEmailResponse(),
-                    goToEmailSendingPage(),
+                    goToEmailSendingPage();
+                    try{
+                      response = getEmailResponse();
+                    } on Exception {
+                      response = Future.value(400);
+                    }
                   }
-                }, // Assumes that the last WAV is the current WAV
+                }, // Assumes that the last m4a is the current m4a
                 style: ButtonStyle(
                 backgroundColor: MaterialStateProperty.all<Color>(Colors.blue),
                 padding: MaterialStateProperty.all<EdgeInsets>(EdgeInsets.all(20)),

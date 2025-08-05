@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:meeting_summarizer_app/backendCalls.dart';
-
 class SendPage extends StatefulWidget {
   const SendPage({super.key});
 

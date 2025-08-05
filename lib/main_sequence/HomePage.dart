@@ -1,42 +1,33 @@
-import 'dart:convert';
 import 'dart:io';
-
 import 'package:flutter/cupertino.dart';
-
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
-
 import 'package:record/record.dart';
-
 import 'package:amplify_flutter/amplify_flutter.dart';
-
 import 'package:meeting_summarizer_app/main_sequence/AddRecipientsPage.dart';
-
 import 'package:location/location.dart';
-
 import 'package:meeting_summarizer_app/classes/Recipient.dart';
 
+/// Name (not the path) of the current/latest local audio file being used to create generations, send emails, etc.
+/// 
+/// This is a string ending in ".m4a".
 var localAudioFileName;
-var filePath = "";
-List<String> recordingFilePaths = List.empty(growable: true); // Assumes that the last WAV is the current WAV
 
+/// List of all the local audio files that have been recorded.
+List<String> recordingFilePaths = List.empty(growable: true); // Assumes that the last m4a is the current m4a
+
+/// Start time of the current/latest recording.
 DateTime startTime = DateTime(DateTime.now().year);
+
+/// End time of the current/latest recording.
 DateTime endTime = DateTime(DateTime.now().year);
+
+/// A ```Future<LocationData>``` variable that holds the location data of the current/latest recording.
 var locationData;
 
 class MyHomePage extends StatefulWidget {
 
   const MyHomePage({super.key});
-
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -49,8 +40,15 @@ class _MyHomePageState extends State<MyHomePage> {
   List<InputDevice> availableInputs = List.empty(growable: true);
   bool inputSelected = false;
   final record = AudioRecorder();
-  String tempWavPath = "";
 
+  /// The local path of the current/latest recording in m4a format.
+  String tempm4aPath = "";
+
+  /// Loads all of the available audio inputs into the ```availableInputs``` list.
+  /// 
+  /// If [checkMissing] is true, the function will check if the last audio input used is now missing. If it is missing, it will reset ```currentInputIndex``` to 0. If it is not, the function will find the index of the last audio input used and set ```currentInputIndex``` to that index.
+  ///
+  /// If [checkMissing] is false, it will simply load all available inputs without checking for missing audio inputs and keep ```currentInputIndex``` at its current value.
   Future<void> configureInputs(bool checkMissing) async {
     final inputs = await record.listInputDevices();
     if (inputs.isEmpty) {
@@ -91,6 +89,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  /// Gets the current location of the device using the ```location``` package.
   void getLocation() async {
     Location location = Location();
 
@@ -127,6 +126,7 @@ class _MyHomePageState extends State<MyHomePage> {
     recipients = <Recipient>[];
   }
 
+  /// Starts writing the recording to a m4a file in the local storage with name defined by ```localAudioFileName``` and path defined by ```tempm4aPath```.
   void startRecording() {
 
     startTime = DateTime.now();
@@ -139,7 +139,7 @@ class _MyHomePageState extends State<MyHomePage> {
           sampleRate: 44100,
           bitRate: 128000,
           numChannels: 2,
-          encoder: AudioEncoder.pcm16bits,
+          encoder: AudioEncoder.aacLc,
           device: availableInputs[currentInputIndex],
         );
         final appDocDir = await getApplicationDocumentsDirectory();
@@ -148,13 +148,13 @@ class _MyHomePageState extends State<MyHomePage> {
         } else {
           dir.create();
         }
-        tempWavPath = '${dir.path}/recording${recordingFilePaths.length.toString()}.WAV';
+        tempm4aPath = '${dir.path}/recording${recordingFilePaths.length.toString()}.m4a';
         try{
-          File(tempWavPath).deleteSync();
-        } on PathNotFoundException catch(e) {}
-        recordingFilePaths.add(tempWavPath);
-        await record.start(recordConfig, path: tempWavPath);
-        safePrint("Recording being written to $tempWavPath");
+          File(tempm4aPath).deleteSync();
+        } on PathNotFoundException {}
+        recordingFilePaths.add(tempm4aPath);
+        await record.start(recordConfig, path: tempm4aPath);
+        safePrint("Recording being written to $tempm4aPath");
       } else {
         safePrint("Permission denied");
       }
@@ -168,6 +168,10 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  /// Stops the recording and shows a dialog asking the user if they want to continue with sending the recording.
+  /// 
+  /// If they choose "Yes", it will navigate to the ```AddRecipientsPage.dart```.
+  /// If they choose "No", it will simply close the dialog and do nothing.
   void stopRecording() async {
     safePrint("Stop Recording");
     record.stop();
@@ -195,7 +199,7 @@ class _MyHomePageState extends State<MyHomePage> {
       );
     });
 
-    // uploadWAVtoS3();
+    // uploadM4aToS3();
   }
 
   void recordPressed() {
@@ -212,6 +216,7 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  /// Calls ```configureInputs``` before opening a popup menu to select an audio input from the list of available inputs.
   void inputPressed() {
 
     configureInputs(true).then((_) {

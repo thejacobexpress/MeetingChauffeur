@@ -1,29 +1,17 @@
 import 'dart:io';
-
-// Amplify Flutter Packages
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:amplify_storage_s3/amplify_storage_s3.dart';
-
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/widgets.dart';
-import 'package:location/location.dart';
 import 'package:meeting_summarizer_app/classes/GroupClass.dart';
 import 'package:meeting_summarizer_app/classes/IndividualClass.dart';
 import 'package:meeting_summarizer_app/classes/Recipient.dart';
-import 'package:meeting_summarizer_app/main_sequence/AddGenerationsPage.dart';
-import 'package:meeting_summarizer_app/main_sequence/AddRecipientsPage.dart';
+import 'package:meeting_summarizer_app/main_sequence/AddSubjectPage.dart';
 import 'package:meeting_summarizer_app/main_sequence/HomePage.dart';
-import 'package:meeting_summarizer_app/widgets/GenerationOption.dart';
 import 'package:path_provider/path_provider.dart';
-
-import 'main.dart';
-
 import 'dart:convert';
 import 'package:meeting_summarizer_app/widgets/Generation.dart';
-
 import 'package:aws_signature_v4/aws_signature_v4.dart';
 import 'package:dio/dio.dart';
-
 import 'package:geocoding/geocoding.dart';
 
 /// The GenerationType enum defines the types of generations that can be created from a meeting recording.
@@ -69,10 +57,15 @@ List<String> nonTailorableStrings = [
 String bucket = "meetingsummarizerapp3e62d7c6d4654f17bc7d042793aca958-dev";
 String region = "us-west-2";
 
-/// Map of contacts as keys that have values of maps that contain their generation names as keys with its values being the generations themselves.
-/// This map is used to keep track of which generations are required for each recipient.
+/// Keeps track of the generations created by the AWS Python backend (stored as ```GenerationType``` strings).
+/// 
+/// Stores each recipient's email as a key, and a map of ```GenerationType``` strings and their boolean values as the value.
+/// 
+/// A key of "General" is used to store generations that are not tailored to any specific recipient. This could occur from several different factors:
+/// The user did not select the tailored option, the generations the user selected cannot be tailored (see ```nonTailorable``` list) the recipient does not have any info, or the recipient's ```getGroups()``` method returns an empty list.
 Map<String, Map<String, dynamic>> genMap = {};
 
+/// Returns false if ```genMap``` has not been fully loaded with generations yet.
 bool genListReady = false;
 
 /// List of emails that are used to keep track of the recipients' emails, directly matching the recipients list.
@@ -156,11 +149,11 @@ Future<String> getAddress(double lat, double long) async {
 /// Checks if there are any recipients that do not have info.
 bool infolessRecipientExists() {
   for(final recipient in recipients) {
-    if(recipient is IndividualClass && (recipient.info == null || recipient.info == "")) {
+    if(recipient is IndividualClass && recipient.info == "") {
       return true;
     } else if (recipient is GroupClass) {
       for(final individual in recipient.individuals) {
-        if(individual.info == null || individual.info == "") {
+        if(individual.info == "") {
           return true;
         }
       }
@@ -213,7 +206,6 @@ Future<Map<String, dynamic>> uploadJsonToS3(String fileName, Map<String, dynamic
         file = File('${dir.path}/$fileName.json');
         file.writeAsStringSync(jsonEncode(json));
       }
-      // safePrint(file);
 
       String localJsonFileName = file.path.split('/').last;
       safePrint('Uploading file: $localJsonFileName');
@@ -230,7 +222,7 @@ Future<Map<String, dynamic>> uploadJsonToS3(String fileName, Map<String, dynamic
     return json;
 }
 
-/// Uploads a tailored JSON file to an AWS S3 bucket that contains recipients' emails and the info that corresponds to that recipient, including IndividualClass info, associated groups' GroupClass info, and simply the groups that the individual is associated with. Function only uploads JSON if the 'tailored' key is present in the JSON passed in and set to true.
+/// Uploads a tailored JSON file to an AWS S3 bucket that contains ```IndividualClass``` instances' emails and the info that corresponds to that individual, including ```IndividualClass``` info, associated groups' ```GroupClass``` info, and simply the groups that the individual is associated with (```IndividualClass.getGroups()```). Function only uploads JSON if the ```tailored``` key is present in the JSON passed in and set to ```true```.
 Future<void> uploadTailorJson(Map<String, dynamic> json) async {
   //Deterine if user wants generations to be tailored to recipients using the 'tailored' key in the json,
   // if so, then add the recipients' info to a new json object that will be sent to the API Gateway.
@@ -244,7 +236,6 @@ Future<void> uploadTailorJson(Map<String, dynamic> json) async {
           if(recipient is IndividualClass && recipient.contact == email && !tailoredMap.containsKey(recipient.contact)) {
             List<String> groupInfo = [];
             for(final group in recipient.getGroups()) {
-              safePrint("Group that ${recipient.name} is in: ${group.name}");
               groupInfo.add("${group.name}: ${group.info}");
             }
             String groupInfoString = recipient.getGroups().isEmpty ? "" : " This person is involved with these groups: ${recipient.getGroups().map((group) => group.name).join(", ")}. Details about each group this individual is involved in: ${groupInfo.join(", ")}.";
@@ -288,7 +279,7 @@ Future<String> generatePresignedPutUrl (String fileName) async {
   final request = AWSHttpRequest.put(
     Uri.https('$bucket.s3.$region.amazonaws.com', '/$key'),
     headers: {
-      'Content-Type': 'audio/wav',
+      'Content-Type': 'audio/m4a',
     },
   );
 
@@ -302,10 +293,10 @@ Future<String> generatePresignedPutUrl (String fileName) async {
   return signedRequest.toString();
 }
 
-/// Uploads the WAV file specified by the given path to an AWS S3 bucket, triggering a lambda function to process the file and generate the requested generations based on the provided JSON specifications. If no path is provided, it prompts the user to select a WAV file.
+/// Uploads the m4a file specified by the given path to an AWS S3 bucket, triggering a lambda function to process the file and generate the requested generations based on the provided JSON specifications. If no path is provided, it prompts the user to select a m4a file.
 /// 
 /// The function also uploads a tailored JSON file using ```uploadTailorJson``` function and uploads a JSON file containing user-selected generation specifications using ```uploadJsonToS3``` function.
-void uploadWAVtoS3(String path, Map<String, dynamic> json) async {
+void uploadM4aToS3(String path, Map<String, dynamic> json) async {
 
   // Upload the tailor json to S3 if the user has selected the tailored option.
   if(json['tailored'] != null && json['tailored']) {
@@ -313,15 +304,15 @@ void uploadWAVtoS3(String path, Map<String, dynamic> json) async {
   }
 
   // Upload the json that contains user selected generation specifications to S3 with the name of the recording file.
-  final newJson = await uploadJsonToS3(path.split("/").last.replaceAll(".WAV", ""), json);
+  await uploadJsonToS3(path.split("/").last.replaceAll(".m4a", ""), json);
 
-  // Ask user to select a WAV file if no path is provided.
+  // Ask user to select an m4a file if no path is provided.
   if(path == "") {
     try {
       FilePickerResult? fileResult = await FilePicker.platform.pickFiles(
         dialogTitle: 'Please select a file to summarize.',
         type: FileType.custom,
-        allowedExtensions: ['wav']
+        allowedExtensions: ['m4a']
       );
       if (fileResult != null && fileResult.files.single.path != null) {
 
@@ -350,12 +341,12 @@ void uploadWAVtoS3(String path, Map<String, dynamic> json) async {
         while(retries<10) {
           try {
             final dio = Dio();
-            final response = await dio.put(
+            await dio.put(
               await generatePresignedPutUrl(localAudioFileName),
               data: file.openRead(),
               options: Options(
                 headers: {
-                  HttpHeaders.contentTypeHeader: 'audio/wav',
+                  HttpHeaders.contentTypeHeader: 'audio/m4a',
                   HttpHeaders.contentLengthHeader: await file.length()
                 },
                 sendTimeout: Duration(seconds: 300),
@@ -403,11 +394,12 @@ Future<String> downloadFileContent(String localDir, String serverDir, String typ
       // Delete the file in the s3 after retrieving it
       bool deletedFile = false;
       for(int i = 0; i < 10; i++) {
-        final deleteResult = await Amplify.Storage.remove(
+        await Amplify.Storage.remove(
           path: StoragePath.fromString(serverDir),
           options: StorageRemoveOptions(bucket: StorageBucket.fromBucketInfo(BucketInfo(bucketName: bucket, region: region))),
         ).result;
 
+        // Get the parent directory of serverDir.
         String parentServerDir;
         List<String> list = serverDir.split('/');
         list.removeAt(list.length-1);
@@ -421,6 +413,7 @@ Future<String> downloadFileContent(String localDir, String serverDir, String typ
             )
           ).result;
 
+          // Check if the S3 directory that contains the file the function is trying to delete. If not, break the for loop.
           if(result.items.isEmpty) {
             deletedFile = true;
             break;
@@ -430,18 +423,18 @@ Future<String> downloadFileContent(String localDir, String serverDir, String typ
           safePrint("error listing items in s3: $e");
         }
       }
-
       if(!deletedFile) {
         safePrint("File could not be deleted from s3: $serverDir");
       } else {
         safePrint("File successfully deleted from s3: $serverDir");
       }
 
+      // Return the content inside of the downloaded file.
       final content = await File(localDir).readAsString();
       safePrint('$type: $content');
       return content;
 
-    } on Exception catch(e) {
+    } on Exception {
       safePrint("File not generated yet.");
       await Future.delayed(Duration(seconds: 2));
       retries++;
@@ -468,7 +461,7 @@ Future<Map<String, Map<String, dynamic>>> retrieveDataFromS3AndLocal(Map<String,
   // Initialize the map for general generations (generations that are not tailored to recipients)
   genMap["General"] = {};
   
-  // Check if a general generation is requested
+  // Check if a general generation is needed (if the 'tailored' key is not checked; if there is an infoless recipient)
   if ((json['tailored'] != null && !json['tailored']) || (infolessRecipientExists() && !downloadedGeneral)) {
     for(final entry in json.entries) {
       canAddEntry = false;
@@ -486,8 +479,8 @@ Future<Map<String, Map<String, dynamic>>> retrieveDataFromS3AndLocal(Map<String,
         case ("summary"):
           if (entry.value) {
             localParentDir = Directory('${appDocDir.path}/summaries/');
-            localDir = Directory('${appDocDir.path}/summaries/${localAudioFileName.replaceAll('.WAV', '.txt')}');
-            serverDir = 'public/summaries/${localAudioFileName.replaceAll('.WAV', '.txt')}';
+            localDir = Directory('${appDocDir.path}/summaries/${localAudioFileName.replaceAll('.m4a', '.txt')}');
+            serverDir = 'public/summaries/${localAudioFileName.replaceAll('.m4a', '.txt')}';
             type = GenerationType.SUMMARY;
             if(localParentDir.existsSync()) {} else {
               localParentDir.create();
@@ -497,8 +490,8 @@ Future<Map<String, Map<String, dynamic>>> retrieveDataFromS3AndLocal(Map<String,
         case ("transcript"):
           if (entry.value) {
             localParentDir = Directory('${appDocDir.path}/transcriptions/');
-            localDir = Directory('${appDocDir.path}/transcriptions/${localAudioFileName.replaceAll('.WAV', '.txt')}');
-            serverDir = 'public/transcriptions/${localAudioFileName.replaceAll('.WAV', '.txt')}';
+            localDir = Directory('${appDocDir.path}/transcriptions/${localAudioFileName.replaceAll('.m4a', '.txt')}');
+            serverDir = 'public/transcriptions/${localAudioFileName.replaceAll('.m4a', '.txt')}';
             type = GenerationType.TRANSCRIPT;
             if(localParentDir.existsSync()) {} else {
               localParentDir.create();
@@ -508,8 +501,8 @@ Future<Map<String, Map<String, dynamic>>> retrieveDataFromS3AndLocal(Map<String,
         case ("action"):
           if (entry.value) {
             localParentDir = Directory('${appDocDir.path}/action/');
-            localDir = Directory('${appDocDir.path}/action/${localAudioFileName.replaceAll('.WAV', '.txt')}');
-            serverDir = 'public/action/${localAudioFileName.replaceAll('.WAV', '.txt')}';
+            localDir = Directory('${appDocDir.path}/action/${localAudioFileName.replaceAll('.m4a', '.txt')}');
+            serverDir = 'public/action/${localAudioFileName.replaceAll('.m4a', '.txt')}';
             type = GenerationType.ACTION;
             if(localParentDir.existsSync()) {} else {
               localParentDir.create();
@@ -519,8 +512,8 @@ Future<Map<String, Map<String, dynamic>>> retrieveDataFromS3AndLocal(Map<String,
         case ("decisions"):
           if (entry.value) {
             localParentDir = Directory('${appDocDir.path}/decisions/');
-            localDir = Directory('${appDocDir.path}/decisions/${localAudioFileName.replaceAll('.WAV', '.txt')}');
-            serverDir = 'public/decisions/${localAudioFileName.replaceAll('.WAV', '.txt')}';
+            localDir = Directory('${appDocDir.path}/decisions/${localAudioFileName.replaceAll('.m4a', '.txt')}');
+            serverDir = 'public/decisions/${localAudioFileName.replaceAll('.m4a', '.txt')}';
             type = GenerationType.DECISION;
             if(localParentDir.existsSync()) {} else {
               localParentDir.create();
@@ -530,8 +523,8 @@ Future<Map<String, Map<String, dynamic>>> retrieveDataFromS3AndLocal(Map<String,
         case ("names"):
           if (entry.value) {
             localParentDir = Directory('${appDocDir.path}/names/');
-            localDir = Directory('${appDocDir.path}/names/${localAudioFileName.replaceAll('.WAV', '.txt')}');
-            serverDir = 'public/names/${localAudioFileName.replaceAll('.WAV', '.txt')}';
+            localDir = Directory('${appDocDir.path}/names/${localAudioFileName.replaceAll('.m4a', '.txt')}');
+            serverDir = 'public/names/${localAudioFileName.replaceAll('.m4a', '.txt')}';
             type = GenerationType.NAMES;
             if(localParentDir.existsSync()) {} else {
               localParentDir.create();
@@ -541,8 +534,8 @@ Future<Map<String, Map<String, dynamic>>> retrieveDataFromS3AndLocal(Map<String,
         case ("topics"):
           if (entry.value) {
             localParentDir = Directory('${appDocDir.path}/topics/');
-            localDir = Directory('${appDocDir.path}/topics/${localAudioFileName.replaceAll('.WAV', '.txt')}');
-            serverDir = 'public/topics/${localAudioFileName.replaceAll('.WAV', '.txt')}';
+            localDir = Directory('${appDocDir.path}/topics/${localAudioFileName.replaceAll('.m4a', '.txt')}');
+            serverDir = 'public/topics/${localAudioFileName.replaceAll('.m4a', '.txt')}';
             type = GenerationType.TOPICS;
             if(localParentDir.existsSync()) {} else {
               localParentDir.create();
@@ -552,8 +545,8 @@ Future<Map<String, Map<String, dynamic>>> retrieveDataFromS3AndLocal(Map<String,
         case ("purpose"):
           if (entry.value) {
             localParentDir = Directory('${appDocDir.path}/purpose/');
-            localDir = Directory('${appDocDir.path}/purpose/${localAudioFileName.replaceAll('.WAV', '.txt')}');
-            serverDir = 'public/purpose/${localAudioFileName.replaceAll('.WAV', '.txt')}';
+            localDir = Directory('${appDocDir.path}/purpose/${localAudioFileName.replaceAll('.m4a', '.txt')}');
+            serverDir = 'public/purpose/${localAudioFileName.replaceAll('.m4a', '.txt')}';
             type = GenerationType.PURPOSE;
             if(localParentDir.existsSync()) {} else {
               localParentDir.create();
@@ -563,8 +556,8 @@ Future<Map<String, Map<String, dynamic>>> retrieveDataFromS3AndLocal(Map<String,
         case ("next_steps"):
           if (entry.value) {
             localParentDir = Directory('${appDocDir.path}/next_steps/');
-            localDir = Directory('${appDocDir.path}/next_steps/${localAudioFileName.replaceAll('.WAV', '.txt')}');
-            serverDir = 'public/next_steps/${localAudioFileName.replaceAll('.WAV', '.txt')}';
+            localDir = Directory('${appDocDir.path}/next_steps/${localAudioFileName.replaceAll('.m4a', '.txt')}');
+            serverDir = 'public/next_steps/${localAudioFileName.replaceAll('.m4a', '.txt')}';
             type = GenerationType.NEXT_STEPS;
             if(localParentDir.existsSync()) {} else {
               localParentDir.create();
@@ -574,8 +567,8 @@ Future<Map<String, Map<String, dynamic>>> retrieveDataFromS3AndLocal(Map<String,
         case ("corrections"):
           if (entry.value) {
             localParentDir = Directory('${appDocDir.path}/corrections/');
-            localDir = Directory('${appDocDir.path}/corrections/${localAudioFileName.replaceAll('.WAV', '.txt')}');
-            serverDir = 'public/corrections/${localAudioFileName.replaceAll('.WAV', '.txt')}';
+            localDir = Directory('${appDocDir.path}/corrections/${localAudioFileName.replaceAll('.m4a', '.txt')}');
+            serverDir = 'public/corrections/${localAudioFileName.replaceAll('.m4a', '.txt')}';
             type = GenerationType.CORRECTIONS;
             if(localParentDir.existsSync()) {} else {
               localParentDir.create();
@@ -585,8 +578,8 @@ Future<Map<String, Map<String, dynamic>>> retrieveDataFromS3AndLocal(Map<String,
         case ("questions"):
           if (entry.value) {
             localParentDir = Directory('${appDocDir.path}/questions/');
-            localDir = Directory('${appDocDir.path}/questions/${localAudioFileName.replaceAll('.WAV', '.txt')}');
-            serverDir = 'public/questions/${localAudioFileName.replaceAll('.WAV', '.txt')}';
+            localDir = Directory('${appDocDir.path}/questions/${localAudioFileName.replaceAll('.m4a', '.txt')}');
+            serverDir = 'public/questions/${localAudioFileName.replaceAll('.m4a', '.txt')}';
             type = GenerationType.QUESTIONS;
             if(localParentDir.existsSync()) {} else {
               localParentDir.create();
@@ -595,6 +588,7 @@ Future<Map<String, Map<String, dynamic>>> retrieveDataFromS3AndLocal(Map<String,
           }
         }
 
+        // Extra functonality here for DATE_TIME and LOCATION GenerationTypes because they are processed on the client side.
         if((entry.key == GenerationType.DATE_TIME.value || entry.key == GenerationType.LOCATION.value) && canAddEntry) {
           switch(entry.key) {
             case ("date_time"):
@@ -605,6 +599,7 @@ Future<Map<String, Map<String, dynamic>>> retrieveDataFromS3AndLocal(Map<String,
               String address = await getAddress(lat, long);
               genMap["General"]![entry.key] = address.replaceAll(", , ", ", ");
           }
+        // Add the downloaded generation to the genMap at the end.
         } else if(canAddEntry) {
           genMap["General"]![type.value] = await downloadFileContent(localDir.path, serverDir, type.value);
         }
@@ -650,8 +645,8 @@ Future<Map<String, Map<String, dynamic>>> retrieveDataFromS3AndLocal(Map<String,
             case ("summary"):
               if (entry.value) {
                 localParentDir = Directory('${appDocDir.path}/summaries/');
-                localDir = Directory('${appDocDir.path}/summaries/${localAudioFileName.replaceAll('.WAV', '_${removeSpecialChars(email)}.txt')}');
-                serverDir = 'public/summaries/${localAudioFileName.replaceAll('.WAV', '_${removeSpecialChars(email)}.txt')}';
+                localDir = Directory('${appDocDir.path}/summaries/${localAudioFileName.replaceAll('.m4a', '_${removeSpecialChars(email)}.txt')}');
+                serverDir = 'public/summaries/${localAudioFileName.replaceAll('.m4a', '_${removeSpecialChars(email)}.txt')}';
                 type = GenerationType.SUMMARY;
                 if(localParentDir.existsSync()) {} else {
                   localParentDir.create();
@@ -661,8 +656,8 @@ Future<Map<String, Map<String, dynamic>>> retrieveDataFromS3AndLocal(Map<String,
             case ("transcript"):
               if (entry.value) {
                 localParentDir = Directory('${appDocDir.path}/transcriptions/');
-                localDir = Directory('${appDocDir.path}/transcriptions/${localAudioFileName.replaceAll('.WAV', '_${removeSpecialChars(email)}.txt')}');
-                serverDir = 'public/transcriptions/${localAudioFileName.replaceAll('.WAV', '.txt')}';
+                localDir = Directory('${appDocDir.path}/transcriptions/${localAudioFileName.replaceAll('.m4a', '_${removeSpecialChars(email)}.txt')}');
+                serverDir = 'public/transcriptions/${localAudioFileName.replaceAll('.m4a', '.txt')}';
                 type = GenerationType.TRANSCRIPT;
                 if(localParentDir.existsSync()) {} else {
                   localParentDir.create();
@@ -672,8 +667,8 @@ Future<Map<String, Map<String, dynamic>>> retrieveDataFromS3AndLocal(Map<String,
             case ("action"):
               if (entry.value) {
                 localParentDir = Directory('${appDocDir.path}/action/');
-                localDir = Directory('${appDocDir.path}/action/${localAudioFileName.replaceAll('.WAV', '_${removeSpecialChars(email)}.txt')}');
-                serverDir = 'public/action/${localAudioFileName.replaceAll('.WAV', '_${removeSpecialChars(email)}.txt')}';
+                localDir = Directory('${appDocDir.path}/action/${localAudioFileName.replaceAll('.m4a', '_${removeSpecialChars(email)}.txt')}');
+                serverDir = 'public/action/${localAudioFileName.replaceAll('.m4a', '_${removeSpecialChars(email)}.txt')}';
                 type = GenerationType.ACTION;
                 if(localParentDir.existsSync()) {} else {
                   localParentDir.create();
@@ -683,8 +678,8 @@ Future<Map<String, Map<String, dynamic>>> retrieveDataFromS3AndLocal(Map<String,
             case ("decisions"):
               if (entry.value) {
                 localParentDir = Directory('${appDocDir.path}/decisions/');
-                localDir = Directory('${appDocDir.path}/decisions/${localAudioFileName.replaceAll('.WAV', '_${removeSpecialChars(email)}.txt')}');
-                serverDir = 'public/decisions/${localAudioFileName.replaceAll('.WAV', '_${removeSpecialChars(email)}.txt')}';
+                localDir = Directory('${appDocDir.path}/decisions/${localAudioFileName.replaceAll('.m4a', '_${removeSpecialChars(email)}.txt')}');
+                serverDir = 'public/decisions/${localAudioFileName.replaceAll('.m4a', '_${removeSpecialChars(email)}.txt')}';
                 type = GenerationType.DECISION;
                 if(localParentDir.existsSync()) {} else {
                   localParentDir.create();
@@ -694,8 +689,8 @@ Future<Map<String, Map<String, dynamic>>> retrieveDataFromS3AndLocal(Map<String,
             case ("names"):
               if (entry.value) {
                 localParentDir = Directory('${appDocDir.path}/names/');
-                localDir = Directory('${appDocDir.path}/names/${localAudioFileName.replaceAll('.WAV', '_${removeSpecialChars(email)}.txt')}'); 
-                serverDir = 'public/names/${localAudioFileName.replaceAll('.WAV', '.txt')}';
+                localDir = Directory('${appDocDir.path}/names/${localAudioFileName.replaceAll('.m4a', '_${removeSpecialChars(email)}.txt')}'); 
+                serverDir = 'public/names/${localAudioFileName.replaceAll('.m4a', '.txt')}';
                 type = GenerationType.NAMES;
                 if(localParentDir.existsSync()) {} else {
                   localParentDir.create();
@@ -705,8 +700,8 @@ Future<Map<String, Map<String, dynamic>>> retrieveDataFromS3AndLocal(Map<String,
             case ("topics"):
               if (entry.value) {
                 localParentDir = Directory('${appDocDir.path}/topics/');
-                localDir = Directory('${appDocDir.path}/topics/${localAudioFileName.replaceAll('.WAV', '_${removeSpecialChars(email)}.txt')}');
-                serverDir = 'public/topics/${localAudioFileName.replaceAll('.WAV', '_${removeSpecialChars(email)}.txt')}';
+                localDir = Directory('${appDocDir.path}/topics/${localAudioFileName.replaceAll('.m4a', '_${removeSpecialChars(email)}.txt')}');
+                serverDir = 'public/topics/${localAudioFileName.replaceAll('.m4a', '_${removeSpecialChars(email)}.txt')}';
                 type = GenerationType.TOPICS;
                 if(localParentDir.existsSync()) {} else {
                   localParentDir.create();
@@ -716,8 +711,8 @@ Future<Map<String, Map<String, dynamic>>> retrieveDataFromS3AndLocal(Map<String,
             case ("purpose"):
               if (entry.value) {
                 localParentDir = Directory('${appDocDir.path}/purpose/');
-                localDir = Directory('${appDocDir.path}/purpose/${localAudioFileName.replaceAll('.WAV', '_${removeSpecialChars(email)}.txt')}');
-                serverDir = 'public/purpose/${localAudioFileName.replaceAll('.WAV', '.txt')}';
+                localDir = Directory('${appDocDir.path}/purpose/${localAudioFileName.replaceAll('.m4a', '_${removeSpecialChars(email)}.txt')}');
+                serverDir = 'public/purpose/${localAudioFileName.replaceAll('.m4a', '.txt')}';
                 type = GenerationType.PURPOSE;
                 if(localParentDir.existsSync()) {} else {
                   localParentDir.create();
@@ -727,8 +722,8 @@ Future<Map<String, Map<String, dynamic>>> retrieveDataFromS3AndLocal(Map<String,
             case ("next_steps"):
               if (entry.value) {
                 localParentDir = Directory('${appDocDir.path}/next_steps/');
-                localDir = Directory('${appDocDir.path}/next_steps/${localAudioFileName.replaceAll('.WAV', '_${removeSpecialChars(email)}.txt')}');
-                serverDir = 'public/next_steps/${localAudioFileName.replaceAll('.WAV', '_${removeSpecialChars(email)}.txt')}';
+                localDir = Directory('${appDocDir.path}/next_steps/${localAudioFileName.replaceAll('.m4a', '_${removeSpecialChars(email)}.txt')}');
+                serverDir = 'public/next_steps/${localAudioFileName.replaceAll('.m4a', '_${removeSpecialChars(email)}.txt')}';
                 type = GenerationType.NEXT_STEPS;
                 if(localParentDir.existsSync()) {} else {
                   localParentDir.create();
@@ -738,8 +733,8 @@ Future<Map<String, Map<String, dynamic>>> retrieveDataFromS3AndLocal(Map<String,
             case ("corrections"):
               if (entry.value) {
                 localParentDir = Directory('${appDocDir.path}/corrections/');
-                localDir = Directory('${appDocDir.path}/corrections/${localAudioFileName.replaceAll('.WAV', '_${removeSpecialChars(email)}.txt')}');
-                serverDir = 'public/corrections/${localAudioFileName.replaceAll('.WAV', '_${removeSpecialChars(email)}.txt')}';
+                localDir = Directory('${appDocDir.path}/corrections/${localAudioFileName.replaceAll('.m4a', '_${removeSpecialChars(email)}.txt')}');
+                serverDir = 'public/corrections/${localAudioFileName.replaceAll('.m4a', '_${removeSpecialChars(email)}.txt')}';
                 type = GenerationType.CORRECTIONS;
                 if(localParentDir.existsSync()) {} else {
                   localParentDir.create();
@@ -749,8 +744,8 @@ Future<Map<String, Map<String, dynamic>>> retrieveDataFromS3AndLocal(Map<String,
             case ("questions"):
               if (entry.value) {
                 localParentDir = Directory('${appDocDir.path}/questions/');
-                localDir = Directory('${appDocDir.path}/questions/${localAudioFileName.replaceAll('.WAV', '_${removeSpecialChars(email)}.txt')}');
-                serverDir = 'public/questions/${localAudioFileName.replaceAll('.WAV', '_${removeSpecialChars(email)}.txt')}';
+                localDir = Directory('${appDocDir.path}/questions/${localAudioFileName.replaceAll('.m4a', '_${removeSpecialChars(email)}.txt')}');
+                serverDir = 'public/questions/${localAudioFileName.replaceAll('.m4a', '_${removeSpecialChars(email)}.txt')}';
                 type = GenerationType.QUESTIONS;
                 if(localParentDir.existsSync()) {} else {
                   localParentDir.create();
@@ -758,6 +753,7 @@ Future<Map<String, Map<String, dynamic>>> retrieveDataFromS3AndLocal(Map<String,
                 canAddEntry = true;
               }
           }
+          // Extra functonality here for DATE_TIME and LOCATION GenerationTypes because they are processed on the client side.
           if((entry.key == GenerationType.DATE_TIME.value || entry.key == GenerationType.LOCATION.value) && canAddEntry) {
             switch(entry.key) {
               case ("date_time"):
@@ -776,8 +772,9 @@ Future<Map<String, Map<String, dynamic>>> retrieveDataFromS3AndLocal(Map<String,
                   genMap[email]![type.value] = genMap["General"]![entry.key] = address.replaceAll(", , ", ", ");
                 }
             }
+          // Add the downloaded generation to the genMap at the end.
           } else if(canAddEntry) {
-            // If the generation is non-tailorble, then add it to the general generations map as well to allow other recipients within genMap to access it.
+            // If the generation is non-tailorable, then add it to the general generations map as well to allow other recipients within genMap to access it.
             if(nonTailorable.contains(type) && downloadedGeneral) {
               genMap[email]![type.value] = genMap["General"]![type.value];
             } else if(nonTailorable.contains(type) && iteration == 1 && !downloadedGeneral) {
@@ -800,8 +797,13 @@ Future<Map<String, Map<String, dynamic>>> retrieveDataFromS3AndLocal(Map<String,
 
     }
 
+  // Add the 'tailorFilePath' key and value so the sendEmails AWS lambda can access the recipients.
   genMap["tailorFilePath"] = {};
-  genMap["tailorFilePath"]!["path"] = "public/jsons/${localAudioFileName.replaceAll(".WAV", "_tailor.json")}";
+  genMap["tailorFilePath"]!["path"] = "public/jsons/${localAudioFileName.replaceAll(".m4a", "_tailor.json")}";
+
+  // Add the 'subject' key and value so the sendEmails AWS lambda has a subject to give emails.
+  genMap["subject"] = {};
+  genMap["subject"]!["content"] = subject;
 
   initGenDisplayed();
   genListReady = true;

@@ -1,12 +1,7 @@
 import 'package:flutter/material.dart';
-
-import 'package:meeting_summarizer_app/backendCalls.dart';
 import 'package:meeting_summarizer_app/classes/GroupClass.dart';
-import 'package:meeting_summarizer_app/classes/IndividualClass.dart';
 import 'package:meeting_summarizer_app/send_pages/IndividualsPage.dart';
-import 'package:meeting_summarizer_app/widgets/Group.dart';
 import 'package:meeting_summarizer_app/widgets/Individual.dart';
-import 'package:meeting_summarizer_app/send_pages/SingleIndividualPage.dart';
 
 class SingleGroupPage extends StatefulWidget {
   final GroupClass group;
@@ -69,6 +64,7 @@ class _SingleGroupPageState extends State<SingleGroupPage> {
     });
   }
 
+  /// Returns a list of ```Individual``` widgets that represent the individuals in the group defined in the ```SingleGroupPage.dart``` page.
   List<Widget> getIndividualWidgetsInGroup() {
     List<Widget> list = [];
     for(final indiviudal in widget.group.individuals) {
