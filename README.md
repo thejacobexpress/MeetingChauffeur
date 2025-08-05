@@ -1,4 +1,4 @@
-# MeetingSummarizer-App
+# MeetingChauffeur
 
 ## Data available to send recipients
 - Time and date (always available)
