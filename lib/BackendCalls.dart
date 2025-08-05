@@ -797,6 +797,12 @@ Future<Map<String, Map<String, dynamic>>> retrieveDataFromS3AndLocal(Map<String,
 
     }
 
+  // Add the 'recipients' key so the sendEmails AWS Lambda can still find recipients even if the user has not chosen the tailored option.
+  if(json["tailored"] == null || !json["tailored"]) {
+    genMap["recipients"] = {};
+    genMap["recipients"]!["content"] = getEmails().join(", ");
+  }
+
   // Add the 'tailorFilePath' key and value so the sendEmails AWS lambda can access the recipients.
   genMap["tailorFilePath"] = {};
   genMap["tailorFilePath"]!["path"] = "public/jsons/${localAudioFileName.replaceAll(".m4a", "_tailor.json")}";

@@ -1,6 +1,8 @@
 /// The list of current recipients that the user has selected.
 List<Recipient> recipients = [];
 
+
+
 /// A class representing a recipient for the generated meeting info, which can be an ```IndividualClass``` or a ```GroupClass```.
 class Recipient {
   
