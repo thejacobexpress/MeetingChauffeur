@@ -18,6 +18,22 @@ The app then attempts to download the generated .txt files repeatedly (returning
 
 And BOOM! It's easy to send meeting notes specificially tailored to each indiviudal stakeholder.
 
+## Generations available to send recipients
+Users can choose what kind of generated notes to send their recipients. Here are the options they can choose from:
+
+- Date and Time
+- Location
+- Summary
+- Transcript
+- Actionable Items
+- Decisions Made
+- Names of Meeting Participants
+- Topics Discussed
+- Meeting Purpose
+- Next Steps
+- Any Corrections to Previous Meeting
+- Key Questions
+
 ## How are the Generations "Tailored"?
 The user can choose to tailor emails by checking the "Tailored" checkbox.
 
@@ -27,20 +43,34 @@ Now when the user generates meeting notes, an additional JSON is sent to the AWS
 
 ### Data Used to Tailor Generations:
 - Individual info - Information about a specific individual, inputted manually by the user:
+<img width="250" height="542" alt="tailored gif" src=https://github.com/user-attachments/assets/8692262d-fcf9-49b8-99e5-2aa878737326/>
 
-- Which groups the individual is apart of
-- Group info
+- Which groups the individual is apart of - The specific groups/departments that an individual is involved in, inputted manually by the user:
+<img width="250" height="542" alt="tailored gif" src=https://github.com/user-attachments/assets/9a9d7ba8-ed61-4c59-896c-046dc1232838/>
 
-## Generations available to send recipients
-- Time and date (always available)
-- Location
-- Summary
-- Transcript
-- actionable items
-- decisions made
-- names of meeting participants
-- topics discussed
-- meeting purpose
-- next steps
-- any corrections to previous meeting
-- key questions
+- Group info - Information about a group, inputted manually by the user:
+<img width="250" height="542" alt="tailored gif" src=https://github.com/user-attachments/assets/7dacda17-8a4b-4342-a197-883cb85a4400/>
+
+Compiling those 3 pieces of information about an individual, meeting notes are generated and sent, ensuring that the only information the recipient receives is important to them specifically.
+
+## Example
+https://github.com/user-attachments/assets/0cbf6836-bea5-4edf-a883-15aec0edf5a8
+
+### Transcript from Chief Marketing Officer
+
+This is the Chief Marketing Officer of McKee Co. speaking. I think that we can all agree that the marketing department has been ran very lean recently. I believe that we can hire some new workers and really just improve the overall effectiveness of the department. I believe that the executive department would be very helpful in this matter.
+
+### Tailored Action for Chief Executive Officer
+
+Review current staffing levels and budget allocation for the marketing department to assess the feasibility of new hires.
+
+Coordinate with the Chief Marketing Officer to identify urgent talent gaps and prioritize roles for recruitment.
+
+Include marketing department resourcing needs as a discussion item in the next executive meeting focused on the new strategic plan.
+
+Evaluate how additional marketing resources align with broader company objectives and strategic initiatives.
+
+Provide executive guidance on integrating new hires into the existing team to maximize department performance.
+
+### Email to Chief Executive Officer
+<img width="1647" height="714" alt="image" src="https://github.com/user-attachments/assets/5d869401-ca8f-4253-b41c-0f4133d55326" />
