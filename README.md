@@ -33,6 +33,8 @@ Users can choose what kind of generated notes to send their recipients. Here are
 - Next Steps
 - Any Corrections to Previous Meeting
 - Key Questions
+<img width="250" height="542" alt="IMG_9555" src="https://github.com/user-attachments/assets/47ba6e2d-ba1a-477d-b6c5-ab39d37a0d04" />
+<img width="250" height="542" alt="IMG_9556" src="https://github.com/user-attachments/assets/eec4f167-670d-4c1f-a6bc-21d03c494286" />
 
 ## How are the Generations "Tailored"?
 The user can choose to tailor emails by checking the "Tailored" checkbox.
@@ -43,13 +45,13 @@ Now when the user generates meeting notes, an additional JSON is sent to the AWS
 
 ### Data Used to Tailor Generations:
 - Individual info - Information about a specific individual, inputted manually by the user:
-<img width="250" height="542" alt="tailored gif" src=https://github.com/user-attachments/assets/8692262d-fcf9-49b8-99e5-2aa878737326/>
+<img width="250" height="542" alt="tailored gif" src=https://github.com/user-attachments/assets/91c17569-79d3-47c8-b90d-6dc0f3963492/>
 
 - Which groups the individual is apart of - The specific groups/departments that an individual is involved in, inputted manually by the user:
-<img width="250" height="542" alt="tailored gif" src=https://github.com/user-attachments/assets/9a9d7ba8-ed61-4c59-896c-046dc1232838/>
+<img width="250" height="542" alt="tailored gif" src=https://github.com/user-attachments/assets/d0e8d465-105c-40e7-9889-4227b4b178e1/>
 
 - Group info - Information about a group, inputted manually by the user:
-<img width="250" height="542" alt="tailored gif" src=https://github.com/user-attachments/assets/7dacda17-8a4b-4342-a197-883cb85a4400/>
+<img width="250" height="542" alt="tailored gif" src=https://github.com/user-attachments/assets/c8887c5c-5575-4c64-8f58-e902a82f208f/>
 
 Compiling those 3 pieces of information about an individual, meeting notes are generated and sent, ensuring that the only information the recipient receives is important to them specifically.
 
