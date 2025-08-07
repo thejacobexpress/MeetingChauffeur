@@ -17,7 +17,7 @@ When the .m4a file is uploaded to the AWS S3 bucket, an AWS lambda function is t
 ### Sending Generated Notes to Stakeholders
 The app then attempts to download the generated .txt files repeatedly (returning a StorageException each time the file cannot be found before it will be generated). Once it downloads all of them, the notes are presented to the app user to look over before sending. Once the user presses "Send", the .txt files are sent to another AWS lambda via an AWS Gateway API using a POST operation. From there, the lambda uses the Gmail API to send the generated text to the recipients.
 
-And BOOM! It's easy to send meeting notes specificially tailored to each indiviudal stakeholder.
+And ***BOOM!*** It's easy to send meeting notes specificially tailored to each indiviudal stakeholder.
 
 ## Example
 https://github.com/user-attachments/assets/0cbf6836-bea5-4edf-a883-15aec0edf5a8
@@ -71,7 +71,7 @@ Now when the user generates meeting notes, an additional JSON is sent to the AWS
 ### Data Used to Tailor Generations:
 - **Individual info** - Information about a specific individual, inputted manually by the user.
 - **Involved groups** - The specific groups/departments that an individual is involved in, inputted manually by the user.
-- **Group info** - Information about a group, inputted manually by the user.
+- **Group info**  - Information about a group, inputted manually by the user.
 <img width="250" height="542" alt="tailored gif" src=https://github.com/user-attachments/assets/91c17569-79d3-47c8-b90d-6dc0f3963492/>
 <img width="250" height="542" alt="tailored gif" src=https://github.com/user-attachments/assets/d0e8d465-105c-40e7-9889-4227b4b178e1/>
 <img width="250" height="542" alt="tailored gif" src=https://github.com/user-attachments/assets/c8887c5c-5575-4c64-8f58-e902a82f208f/>
